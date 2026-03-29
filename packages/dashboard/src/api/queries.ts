@@ -32,6 +32,7 @@ export async function latestStats(hours: number): Promise<LatestStat[]> {
       select
         region,
         provider,
+        round(avg(response_ms))::int as avg_ms,
         round(percentile_cont(0.50) within group (order by response_ms))::int as p50_ms,
         round(percentile_cont(0.95) within group (order by response_ms))::int as p95_ms
       from windowed
@@ -41,6 +42,7 @@ export async function latestStats(hours: number): Promise<LatestStat[]> {
     select
       availability.region,
       availability.provider,
+      latency.avg_ms,
       latency.p50_ms,
       latency.p95_ms,
       availability.success_rate,
@@ -102,6 +104,7 @@ export async function closeSqlClient() {
 }
 
 type LatestStatsRow = {
+  avg_ms: number | null;
   latest_at: Date;
   p50_ms: number | null;
   p95_ms: number | null;
@@ -146,6 +149,7 @@ function getDatabase() {
 
 function mapLatestRow(row: LatestStatsRow): LatestStat {
   return {
+    avgMs: row.avg_ms,
     latestAt: row.latest_at.toISOString(),
     p50Ms: row.p50_ms,
     p95Ms: row.p95_ms,

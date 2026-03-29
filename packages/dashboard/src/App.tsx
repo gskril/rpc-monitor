@@ -45,14 +45,14 @@ type RegionLatencyRow = {
 export default function App() {
   const [overviewRows, setOverviewRows] = useState<LatestStat[]>([]);
   const [timeseriesRows, setTimeseriesRows] = useState<TimeSeriesPoint[]>([]);
-  const [providerRows, setProviderRows] = useState<TimeSeriesPoint[]>([]);
+  const [regionalStats, setRegionalStats] = useState<LatestStat[]>([]);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
   const [timeseriesHours, setTimeseriesHours] = useState(DEFAULT_TIMESERIES_HOURS);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [timeseriesLoading, setTimeseriesLoading] = useState(false);
-  const [providerRowsLoading, setProviderRowsLoading] = useState(false);
+  const [regionalStatsLoading, setRegionalStatsLoading] = useState(false);
 
   const deferredRegion = useDeferredValue(selectedRegion);
   const deferredProvider = useDeferredValue(selectedProvider);
@@ -142,25 +142,17 @@ export default function App() {
   }, [deferredRegion, timeseriesHours]);
 
   useEffect(() => {
-    if (!deferredProvider) {
-      setProviderRows([]);
-      return;
-    }
-
     let cancelled = false;
 
-    async function loadProviderRows() {
-      setProviderRowsLoading(true);
+    async function loadRegionalStats() {
+      setRegionalStatsLoading(true);
       setDashboardError(null);
 
       try {
-        const response = await fetchTimeseries({
-          hours: timeseriesHours,
-          provider: deferredProvider,
-        });
+        const response = await fetchLatest(timeseriesHours);
 
         if (!cancelled) {
-          setProviderRows(response.rows);
+          setRegionalStats(response.rows);
         }
       } catch (error) {
         if (!cancelled) {
@@ -168,17 +160,17 @@ export default function App() {
         }
       } finally {
         if (!cancelled) {
-          setProviderRowsLoading(false);
+          setRegionalStatsLoading(false);
         }
       }
     }
 
-    void loadProviderRows();
+    void loadRegionalStats();
 
     return () => {
       cancelled = true;
     };
-  }, [deferredProvider, timeseriesHours]);
+  }, [timeseriesHours]);
 
   const regions = useMemo(() => uniqueValues(overviewRows.map((row) => row.region)), [overviewRows]);
 
@@ -231,38 +223,18 @@ export default function App() {
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(
     () =>
-      regions.map((region) => {
-        const rows = providerRows.filter((row) => row.region === region);
-        const successfulRows = rows.filter((row) => row.success);
-        const totalLatency = successfulRows.reduce((sum, row) => sum + row.responseMs, 0);
-        const latestAt =
-          rows.length > 0
-            ? rows.reduce((latest, row) => {
-                if (!latest) {
-                  return row.createdAt;
-                }
-
-                return Date.parse(row.createdAt) > Date.parse(latest) ? row.createdAt : latest;
-              }, "" as string)
-            : null;
-
-        const sortedMs = successfulRows.map((row) => row.responseMs).sort((a, b) => a - b);
-        const p95Index = Math.ceil(sortedMs.length * 0.95) - 1;
-        const p95Ms = sortedMs.length > 0 ? sortedMs[Math.max(0, p95Index)]! : null;
-
-        return {
-          averageLatencyMs: successfulRows.length
-            ? Math.round(totalLatency / successfulRows.length)
-            : null,
-          failedCount: rows.length - successfulRows.length,
-          latestAt,
-          p95Ms: p95Ms !== null ? Math.round(p95Ms) : null,
-          region,
-          sampleCount: rows.length,
-          successRate: rows.length ? (successfulRows.length / rows.length) * 100 : null,
-        };
-      }),
-    [providerRows, regions],
+      regionalStats
+        .filter((row) => row.provider === deferredProvider)
+        .map((row) => ({
+          averageLatencyMs: row.avgMs,
+          failedCount: row.sampleCount - row.successCount,
+          latestAt: row.latestAt,
+          p95Ms: row.p95Ms,
+          region: row.region,
+          sampleCount: row.sampleCount,
+          successRate: row.successRate,
+        })),
+    [regionalStats, deferredProvider],
   );
 
   return (
@@ -369,7 +341,7 @@ export default function App() {
             </p>
           </div>
           <span className="chip">
-            {providerRowsLoading ? "Refreshing..." : `${regionLatencyRows.length} regions`}
+            {regionalStatsLoading ? "Refreshing..." : `${regionLatencyRows.length} regions`}
           </span>
         </div>
 

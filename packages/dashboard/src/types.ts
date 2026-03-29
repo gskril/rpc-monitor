@@ -1,4 +1,5 @@
 export type LatestStat = {
+  avgMs: number | null;
   latestAt: string;
   p50Ms: number | null;
   p95Ms: number | null;
