@@ -10,7 +10,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchLatest, fetchTimeseries } from "./lib/api";
-import type { LatestStat, TimeSeriesPoint } from "./types";
 
 const OVERVIEW_WINDOW_HOURS = 1;
 const DEFAULT_TIMESERIES_HOURS = 6;
