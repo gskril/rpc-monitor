@@ -265,112 +265,88 @@ export default function App() {
 
   return (
     <main className="page-shell">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">ENS Infrastructure Benchmarks</p>
-          <h1>Resolution latency by RPC provider and Railway region</h1>
-          <p className="hero-copy">
-            Tracks real ENS `eth_call` performance for `vitalik.eth` and surfaces the
-            latency and availability signals needed to choose the best backend path.
-          </p>
+      <header className="header">
+        <div className="header-left">
+          <span className="header-tag">ENS Latency Monitor</span>
+          <h1>RPC Provider Benchmarks</h1>
         </div>
-        <div className="hero-card">
-          <Metric
-            label="Tracked providers"
-            value={String(uniqueValues(overviewRows.map((row) => row.provider)).length)}
-          />
-          <Metric
-            label="Tracked regions"
-            value={String(uniqueValues(overviewRows.map((row) => row.region)).length)}
-          />
-          <Metric
-            label="Selected p95"
-            value={selectedOverview?.p95Ms ? `${selectedOverview.p95Ms} ms` : "n/a"}
-          />
+        <div className="header-metrics">
+          <div className="header-metric">
+            <span>Providers</span>
+            <strong>{providers.length}</strong>
+          </div>
+          <div className="header-metric">
+            <span>Regions</span>
+            <strong>{regions.length}</strong>
+          </div>
+          <div className="header-metric">
+            <span>p95</span>
+            <strong>{selectedOverview?.p95Ms ? `${selectedOverview.p95Ms}ms` : "--"}</strong>
+          </div>
         </div>
-      </section>
+      </header>
 
       {dashboardError ? <p className="banner error">{dashboardError}</p> : null}
       {overviewLoading ? <p className="banner">Loading benchmark data...</p> : null}
 
-      <section className="panel controls-panel">
-        <div className="controls-header">
-          <h2>Time series filters</h2>
-          <p>Compare every provider in one Railway region and inspect regional averages for one selected provider.</p>
-        </div>
-        <div className="controls-grid">
-          <label>
-            <span>Region</span>
+      <div className="card">
+        <div className="toolbar">
+          <div className="toolbar-group">
+            <span className="toolbar-label">Region</span>
             <select
               value={selectedRegion}
               onChange={(event) => {
-                const nextRegion = event.target.value;
-                startTransition(() => {
-                  setSelectedRegion(nextRegion);
-                });
+                startTransition(() => setSelectedRegion(event.target.value));
               }}
             >
               {regions.map((region) => (
-                <option key={region} value={region}>
-                  {region}
-                </option>
+                <option key={region} value={region}>{region}</option>
               ))}
             </select>
-          </label>
+          </div>
 
-          <label>
-            <span>Provider</span>
+          <div className="toolbar-sep" />
+
+          <div className="toolbar-group">
+            <span className="toolbar-label">Provider</span>
             <select
               value={selectedProvider}
               onChange={(event) => {
-                const nextProvider = event.target.value;
-                startTransition(() => {
-                  setSelectedProvider(nextProvider);
-                });
+                startTransition(() => setSelectedProvider(event.target.value));
               }}
             >
               {providers.map((provider) => (
-                <option key={provider} value={provider}>
-                  {provider}
-                </option>
+                <option key={provider} value={provider}>{provider}</option>
               ))}
             </select>
-          </label>
+          </div>
 
-          <label>
-            <span>History window</span>
+          <div className="toolbar-sep" />
+
+          <div className="toolbar-group">
+            <span className="toolbar-label">Window</span>
             <select
               value={String(timeseriesHours)}
               onChange={(event) => {
-                startTransition(() => {
-                  setTimeseriesHours(Number(event.target.value));
-                });
+                startTransition(() => setTimeseriesHours(Number(event.target.value)));
               }}
             >
               {[1, 3, 6, 12, 24, 72].map((hours) => (
-                <option key={hours} value={hours}>
-                  Last {hours}h
-                </option>
+                <option key={hours} value={hours}>Last {hours}h</option>
               ))}
             </select>
-          </label>
+          </div>
         </div>
-      </section>
 
-      <section className="panel chart-panel">
-        <div className="panel-header">
+        <div className="section-header">
           <div>
-            <h2>Latency over time</h2>
-            <p>
-              All providers in {selectedRegion || "a region"} over the last {timeseriesHours} hours
+            <h2 className="section-title">Latency over time</h2>
+            <p className="section-subtitle">
+              All providers in {selectedRegion || "..."} &middot; {timeseriesHours}h window
             </p>
           </div>
-          <span className="status-chip">
-            {timeseriesLoading
-              ? "Refreshing…"
-              : selectedProvider
-                ? `Highlight: ${selectedProvider}`
-                : "All providers"}
+          <span className="chip">
+            {timeseriesLoading ? "Refreshing..." : selectedProvider || "All"}
           </span>
         </div>
 
@@ -383,19 +359,18 @@ export default function App() {
             />
           </Suspense>
         </div>
-      </section>
+      </div>
 
-      <section className="panel table-panel">
-        <div className="panel-header">
+      <div className="card">
+        <div className="section-header" style={{ paddingBottom: 0 }}>
           <div>
-            <h2>Average latency by region</h2>
-            <p>
-              Successful-call average for {selectedProvider || "the selected provider"} across every
-              Railway region in the last {timeseriesHours} hours.
+            <h2 className="section-title">Regional averages</h2>
+            <p className="section-subtitle">
+              {selectedProvider || "..."} across all regions &middot; {timeseriesHours}h window
             </p>
           </div>
-          <span className="status-chip">
-            {providerRowsLoading ? "Refreshing…" : `${timeseriesHours}h window`}
+          <span className="chip">
+            {providerRowsLoading ? "Refreshing..." : `${regionLatencyRows.length} regions`}
           </span>
         </div>
 
@@ -404,11 +379,11 @@ export default function App() {
             <thead>
               <tr>
                 <th>Region</th>
-                <th>Average latency</th>
+                <th>Avg latency</th>
                 <th>Success rate</th>
                 <th>Samples</th>
                 <th>Failures</th>
-                <th>Last sample</th>
+                <th>Last seen</th>
               </tr>
             </thead>
             <tbody>
@@ -418,28 +393,31 @@ export default function App() {
                   className={row.region === selectedRegion ? "selected-row" : undefined}
                 >
                   <td>{row.region}</td>
-                  <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "n/a"}</td>
-                  <td>{row.successRate !== null ? `${row.successRate.toFixed(2)}%` : "n/a"}</td>
+                  <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "--"}</td>
+                  <td>
+                    {row.successRate !== null ? (
+                      <span className={rateClass(row.successRate)}>
+                        {row.successRate.toFixed(1)}%
+                      </span>
+                    ) : "--"}
+                  </td>
                   <td>{row.sampleCount}</td>
-                  <td>{row.failedCount}</td>
-                  <td>{row.latestAt ? absoluteDateTime.format(new Date(row.latestAt)) : "n/a"}</td>
+                  <td>{row.failedCount || "--"}</td>
+                  <td>{row.latestAt ? absoluteDateTime.format(new Date(row.latestAt)) : "--"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
 
-function Metric(props: { label: string; value: string }) {
-  return (
-    <div className="metric">
-      <span>{props.label}</span>
-      <strong>{props.value}</strong>
-    </div>
-  );
+function rateClass(rate: number): string {
+  if (rate >= 99) return "rate-good";
+  if (rate >= 90) return "rate-warn";
+  return "rate-bad";
 }
 
 function formatError(error: unknown): string {
