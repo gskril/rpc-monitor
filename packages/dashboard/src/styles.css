@@ -382,4 +382,16 @@ tbody tr:hover {
   }
 
   select { flex: 1; }
+
+  th {
+    min-width: 90px;
+  }
+
+  th:first-child {
+    min-width: 110px;
+  }
+
+  th:last-child {
+    min-width: 120px;
+  }
 }
