@@ -106,7 +106,7 @@ bun run db:migrate
 
 Create one Railway project with:
 
-- `worker-us-west1`
+- `worker-us-west2`
 - `worker-us-east4`
 - `worker-europe-west4`
 - `worker-asia-southeast1`
@@ -132,7 +132,7 @@ Keep `REGION` configured per service in the Railway dashboard because the four w
 
 Set these env vars per worker service:
 
-- `REGION=us-west1` or `us-east4` or `europe-west4` or `asia-southeast1`
+- `REGION=us-west2` or `us-east4` or `europe-west4` or `asia-southeast1`
 - `DATABASE_URL`
 - provider-specific credentials
 
@@ -156,7 +156,7 @@ Set:
 - Returns `p50`, `p95`, success rate, sample counts, and the latest sample timestamp grouped by `region` and `provider`
 - Defaults to `1` hour if `hours` is omitted
 
-`GET /api/timeseries?provider=alchemy&region=us-west1&hours=6`
+`GET /api/timeseries?provider=alchemy&region=us-west2&hours=6`
 
 - Returns raw benchmark points for charting
 - Defaults to `6` hours if `hours` is omitted
