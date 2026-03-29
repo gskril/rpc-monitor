@@ -383,24 +383,15 @@ tbody tr:hover {
 
   select { flex: 1; }
 
-  th, td {
-    padding: 8px;
-    font-size: 0.78rem;
-    white-space: nowrap;
-  }
-
-  td:nth-child(2),
-  td:nth-child(3),
-  td:nth-child(4),
-  td:nth-child(5) {
-    font-size: 0.78rem;
-  }
-
-  td:last-child {
-    font-size: 0.75rem;
-  }
-
   th {
-    font-size: 0.7rem;
+    min-width: 90px;
+  }
+
+  th:first-child {
+    min-width: 110px;
+  }
+
+  th:last-child {
+    min-width: 120px;
   }
 }
