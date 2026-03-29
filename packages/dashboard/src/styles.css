@@ -466,4 +466,8 @@ tbody tr:hover {
   .ranking-chart {
     padding: 8px 8px 12px;
   }
+
+  .ranking-rate {
+    display: none;
+  }
 }
