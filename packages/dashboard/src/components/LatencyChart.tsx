@@ -53,11 +53,11 @@ export default function LatencyChart(props: {
         />
         <YAxis
           stroke="#4a5568"
-          width={48}
+          width={52}
           tick={{ fill: "#6b7f94", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}
           tickLine={false}
           axisLine={false}
-          unit=" ms"
+          tickFormatter={(v: number) => `${v}ms`}
         />
         <Tooltip
           content={({ active, payload }) => (

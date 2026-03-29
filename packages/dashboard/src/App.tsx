@@ -362,7 +362,7 @@ export default function App() {
       </div>
 
       <div className="card">
-        <div className="section-header" style={{ paddingBottom: 0 }}>
+        <div className="section-header">
           <div>
             <h2 className="section-title">Regional averages</h2>
             <p className="section-subtitle">
