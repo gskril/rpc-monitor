@@ -267,8 +267,9 @@ export default function App() {
     <main className="page-shell">
       <header className="header">
         <div className="header-left">
-          <span className="header-tag">ENS Latency Monitor</span>
+          <span className="header-tag">RPC Monitor</span>
           <h1>RPC Provider Benchmarks</h1>
+          <p className="header-note">All checks use the same <code>eth_call</code> to the ENS Universal Resolver</p>
         </div>
         <div className="header-metrics">
           <div className="header-metric">

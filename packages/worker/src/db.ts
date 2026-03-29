@@ -1,4 +1,4 @@
-import { type createDatabase } from "@ens-monitor/shared";
+import { type createDatabase } from "@rpc-monitor/shared";
 
 import type { ProviderBenchmark } from "./index";
 

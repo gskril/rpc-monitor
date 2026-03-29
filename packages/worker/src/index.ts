@@ -2,7 +2,7 @@ import {
   createDatabase,
   destroyDatabase,
   migrateToLatest,
-} from "@ens-monitor/shared";
+} from "@rpc-monitor/shared";
 
 import {
   BENCHMARK_CALLDATA,

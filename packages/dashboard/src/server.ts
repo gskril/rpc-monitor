@@ -32,7 +32,7 @@ const server = Bun.serve({
   },
 });
 
-console.log(`ENS RPC dashboard listening on http://localhost:${server.port}`);
+console.log(`RPC Monitor dashboard listening on http://localhost:${server.port}`);
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {

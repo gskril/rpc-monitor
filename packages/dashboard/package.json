@@ -1,5 +1,5 @@
 {
-  "name": "@ens-monitor/dashboard",
+  "name": "@rpc-monitor/dashboard",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "check": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "@ens-monitor/shared": "workspace:*",
+    "@rpc-monitor/shared": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.3.0"

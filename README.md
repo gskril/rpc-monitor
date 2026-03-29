@@ -1,15 +1,15 @@
-# ENS RPC Latency Monitor
+# RPC Monitor
 
-Measures real ENS resolution latency across RPC providers and Railway regions, stores the results in Postgres, and exposes a dashboard for comparing latency and availability over time.
+Measures RPC provider latency across Railway regions using a consistent `eth_call` (ENS Universal Resolver), stores the results in Postgres, and exposes a dashboard for comparing latency and availability over time.
 
 ## What this repo contains
 
-- `packages/worker`: Bun cron worker that benchmarks ENS resolution with a real `eth_call`
+- `packages/worker`: Bun cron worker that benchmarks RPC providers with a real `eth_call`
 - `packages/dashboard`: Bun API + Vite/React dashboard served from the same service
 - `packages/shared`: Kysely database schema, migrations, and shared DB helpers
 - `.env.example`: Shared environment variable reference
 
-The worker benchmarks `vitalik.eth` through the ENS Universal Resolver and records:
+The worker sends the same `eth_call` (resolving `vitalik.eth` via the ENS Universal Resolver) to every provider and records:
 
 - `region`
 - `provider`

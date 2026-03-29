@@ -1,5 +1,5 @@
 {
-  "name": "ens-rpc-latency-monitor",
+  "name": "rpc-monitor",
   "private": true,
   "packageManager": "bun@1.3.6",
   "devDependencies": {

@@ -9,9 +9,9 @@
       },
     },
     "packages/dashboard": {
-      "name": "@ens-monitor/dashboard",
+      "name": "@rpc-monitor/dashboard",
       "dependencies": {
-        "@ens-monitor/shared": "workspace:*",
+        "@rpc-monitor/shared": "workspace:*",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "recharts": "^3.3.0",
@@ -25,7 +25,7 @@
       },
     },
     "packages/shared": {
-      "name": "@ens-monitor/shared",
+      "name": "@rpc-monitor/shared",
       "dependencies": {
         "kysely": "^0.28.8",
         "pg": "^8.16.3",
@@ -36,9 +36,9 @@
       },
     },
     "packages/worker": {
-      "name": "@ens-monitor/worker",
+      "name": "@rpc-monitor/worker",
       "dependencies": {
-        "@ens-monitor/shared": "workspace:*",
+        "@rpc-monitor/shared": "workspace:*",
         "evm-providers": "^0.5.7",
         "viem": "^2.37.6",
       },
@@ -49,12 +49,6 @@
   },
   "packages": {
     "@adraffy/ens-normalize": ["@adraffy/ens-normalize@1.11.1", "", {}, "sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ=="],
-
-    "@ens-monitor/dashboard": ["@ens-monitor/dashboard@workspace:packages/dashboard"],
-
-    "@ens-monitor/shared": ["@ens-monitor/shared@workspace:packages/shared"],
-
-    "@ens-monitor/worker": ["@ens-monitor/worker@workspace:packages/worker"],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.27.4", "", { "os": "aix", "cpu": "ppc64" }, "sha512-cQPwL2mp2nSmHHJlCyoXgHGhbEPMrEEU5xhkcy3Hs/O7nGZqEpZ2sUtLaL9MORLtDfRvVl2/3PAuEkYZH0Ty8Q=="],
 
@@ -167,6 +161,12 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-RdcryEfzZr+lAr5kRm2ucN9aVlCCa2QNq4hXelZxb8GG0NJSazq44Z3PCCc8wISRuCVnGs0lQJVX5Vp6fKA+IA=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PrsWNQ8BuE00O3Xsx3ALh2Df8fAj9+cvvX9AIA6o4KpATR98c9mud4XtDWVvsEuyia5U4tVSTKygawyJkjm60w=="],
+
+    "@rpc-monitor/dashboard": ["@rpc-monitor/dashboard@workspace:packages/dashboard"],
+
+    "@rpc-monitor/shared": ["@rpc-monitor/shared@workspace:packages/shared"],
+
+    "@rpc-monitor/worker": ["@rpc-monitor/worker@workspace:packages/worker"],
 
     "@scure/base": ["@scure/base@1.2.6", "", {}, "sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg=="],
 

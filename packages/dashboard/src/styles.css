@@ -98,6 +98,21 @@ button, input, select, table { font: inherit; }
   line-height: 1.25;
 }
 
+.header-note {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.header-note code {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
 .header-metrics {
   display: flex;
   gap: 2px;

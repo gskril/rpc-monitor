@@ -1,5 +1,5 @@
 {
-  "name": "@ens-monitor/worker",
+  "name": "@rpc-monitor/worker",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "check": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "@ens-monitor/shared": "workspace:*",
+    "@rpc-monitor/shared": "workspace:*",
     "evm-providers": "^0.5.7",
     "viem": "^2.37.6"
   },

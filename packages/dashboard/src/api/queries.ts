@@ -1,4 +1,4 @@
-import { createDatabase, destroyDatabase, migrateToLatest, sql } from "@ens-monitor/shared";
+import { createDatabase, destroyDatabase, migrateToLatest, sql } from "@rpc-monitor/shared";
 import type { LatestStat, TimeSeriesPoint } from "../types";
 
 let databasePromise: Promise<ReturnType<typeof createDatabase>> | undefined;

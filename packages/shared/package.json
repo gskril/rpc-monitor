@@ -1,5 +1,5 @@
 {
-  "name": "@ens-monitor/shared",
+  "name": "@rpc-monitor/shared",
   "private": true,
   "type": "module",
   "exports": {
