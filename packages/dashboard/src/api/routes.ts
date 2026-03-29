@@ -46,10 +46,13 @@ export async function shutdownApi() {
 
 function json(data: unknown, options?: { status?: number; maxAge?: number }): Response {
   const { status = 200, maxAge = 0 } = options ?? {};
+  const cacheControl = maxAge > 0
+    ? `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${maxAge}`
+    : "no-store";
   return Response.json(data, {
     status,
     headers: {
-      "cache-control": maxAge > 0 ? `public, max-age=${maxAge}` : "no-store",
+      "cache-control": cacheControl,
     },
   });
 }

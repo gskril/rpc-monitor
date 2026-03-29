@@ -11,7 +11,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchLatest, fetchTimeseries } from "./lib/api";
 
-const OVERVIEW_WINDOW_HOURS = 1;
 const DEFAULT_TIMESERIES_HOURS = 6;
 const ALL_REGIONS = "all";
 
@@ -51,17 +50,17 @@ export default function App() {
   const deferredRegion = useDeferredValue(selectedRegion);
   const deferredProvider = useDeferredValue(selectedProvider);
 
-  const overviewQuery = useQuery({
-    queryKey: ["latest", OVERVIEW_WINDOW_HOURS],
-    queryFn: () => fetchLatest(OVERVIEW_WINDOW_HOURS),
+  const regionalStatsQuery = useQuery({
+    queryKey: ["latest", timeseriesHours],
+    queryFn: () => fetchLatest(timeseriesHours),
   });
 
-  const overviewRows = overviewQuery.data?.rows ?? [];
+  const regionalStats = regionalStatsQuery.data?.rows ?? [];
 
-  // Set initial selections when overview data first loads
+  // Seed the default selections from the same window used elsewhere in the dashboard.
   useEffect(() => {
-    if (overviewRows.length > 0 && !selectedRegion) {
-      const firstRow = overviewRows[0];
+    if (regionalStats.length > 0 && !selectedRegion) {
+      const firstRow = regionalStats[0];
       if (!firstRow) return;
 
       startTransition(() => {
@@ -69,7 +68,7 @@ export default function App() {
         setSelectedProvider((current) => current || firstRow.provider);
       });
     }
-  }, [overviewRows, selectedRegion]);
+  }, [regionalStats, selectedRegion]);
 
   const timeseriesQuery = useQuery({
     queryKey: ["timeseries", deferredRegion, timeseriesHours],
@@ -83,21 +82,16 @@ export default function App() {
   });
 
   const timeseriesRows = timeseriesQuery.data?.rows ?? [];
+  const dashboardError = timeseriesQuery.error ?? regionalStatsQuery.error;
 
-  const regionalStatsQuery = useQuery({
-    queryKey: ["latest", timeseriesHours],
-    queryFn: () => fetchLatest(timeseriesHours),
-  });
-
-  const regionalStats = regionalStatsQuery.data?.rows ?? [];
-
-  const dashboardError = overviewQuery.error ?? timeseriesQuery.error ?? regionalStatsQuery.error;
-
-  const regions = useMemo(() => uniqueValues(overviewRows.map((row) => row.region)), [overviewRows]);
+  const regions = useMemo(
+    () => uniqueValues(regionalStats.map((row) => row.region)),
+    [regionalStats],
+  );
 
   const providers = useMemo(
-    () => uniqueValues(overviewRows.map((row) => row.provider)),
-    [overviewRows],
+    () => uniqueValues(regionalStats.map((row) => row.provider)),
+    [regionalStats],
   );
 
   useEffect(() => {
@@ -232,7 +226,7 @@ export default function App() {
       </header>
 
       {dashboardError ? <p className="banner error">{dashboardError.message}</p> : null}
-      {overviewQuery.isLoading ? <p className="banner">Loading benchmark data...</p> : null}
+      {regionalStatsQuery.isLoading ? <p className="banner">Loading benchmark data...</p> : null}
 
       <div className="card">
         <div className="toolbar">
