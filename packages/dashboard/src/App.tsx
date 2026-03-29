@@ -28,6 +28,7 @@ const LatencyChart = lazy(() => import("./components/LatencyChart"));
 
 type ChartDatum = {
   createdAt: string;
+  epoch: number;
   failedProviders: string[];
   tickLabel: string;
 } & Record<string, number | string | string[] | null>;
@@ -35,6 +36,7 @@ type ChartDatum = {
 type RegionLatencyRow = {
   averageLatencyMs: number | null;
   failedCount: number;
+  isAggregate?: boolean;
   latestAt: string | null;
   p95Ms: number | null;
   region: string;
@@ -121,6 +123,7 @@ export default function App() {
           existing ??
           {
             createdAt: row.createdAt,
+            epoch: Date.parse(row.createdAt),
             failedProviders: [],
             tickLabel: compactTime.format(new Date(row.createdAt)),
           };
@@ -139,14 +142,20 @@ export default function App() {
       );
     }
 
-    // When "all" is selected, average latency across regions per (timestamp, provider)
+    // When "all" is selected, average latency across regions per (timestamp, provider).
+    // Timestamps from different regions may differ by a few seconds, so round to the
+    // nearest minute before grouping so they collapse into a single data point.
     const grouped = new Map<string, Map<string, { total: number; count: number; failed: boolean }>>();
 
     for (const row of timeseriesRows) {
-      let providerMap = grouped.get(row.createdAt);
+      const rounded = new Date(row.createdAt);
+      rounded.setSeconds(0, 0);
+      const key = rounded.toISOString();
+
+      let providerMap = grouped.get(key);
       if (!providerMap) {
         providerMap = new Map();
-        grouped.set(row.createdAt, providerMap);
+        grouped.set(key, providerMap);
       }
 
       const existing = providerMap.get(row.provider);
@@ -170,6 +179,7 @@ export default function App() {
     for (const [createdAt, providerMap] of grouped) {
       const point: ChartDatum = {
         createdAt,
+        epoch: Date.parse(createdAt),
         failedProviders: [],
         tickLabel: compactTime.format(new Date(createdAt)),
       };
@@ -190,8 +200,8 @@ export default function App() {
   }, [timeseriesRows, selectedRegion]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(
-    () =>
-      regionalStats
+    () => {
+      const providerRows = regionalStats
         .filter((row) => row.provider === deferredProvider)
         .map((row) => ({
           averageLatencyMs: row.avgMs,
@@ -201,7 +211,25 @@ export default function App() {
           region: row.region,
           sampleCount: row.sampleCount,
           successRate: row.successRate,
-        })),
+        }));
+
+      if (!providerRows.length) {
+        return providerRows;
+      }
+
+      const aggregateRow: RegionLatencyRow = {
+        averageLatencyMs: averageNullable(providerRows.map((row) => row.averageLatencyMs)),
+        failedCount: providerRows.reduce((total, row) => total + row.failedCount, 0),
+        isAggregate: true,
+        latestAt: latestIso(providerRows.map((row) => row.latestAt)),
+        p95Ms: averageNullable(providerRows.map((row) => row.p95Ms)),
+        region: "All",
+        sampleCount: providerRows.reduce((total, row) => total + row.sampleCount, 0),
+        successRate: averageNullable(providerRows.map((row) => row.successRate)),
+      };
+
+      return [aggregateRow, ...providerRows];
+    },
     [regionalStats, deferredProvider],
   );
 
@@ -331,7 +359,15 @@ export default function App() {
               {regionLatencyRows.map((row) => (
                 <tr
                   key={row.region}
-                  className={row.region === selectedRegion && selectedRegion !== ALL_REGIONS ? "selected-row" : undefined}
+                  className={
+                    row.isAggregate
+                      ? selectedRegion === ALL_REGIONS
+                        ? "selected-row"
+                        : undefined
+                      : row.region === selectedRegion
+                        ? "selected-row"
+                        : undefined
+                  }
                 >
                   <td>{row.region}</td>
                   <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "--"}</td>
@@ -364,4 +400,28 @@ function rateClass(rate: number): string {
 
 function uniqueValues(values: string[]): string[] {
   return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
+}
+
+function averageNullable(values: Array<number | null>): number | null {
+  const numericValues = values.filter((value): value is number => value !== null);
+
+  if (!numericValues.length) {
+    return null;
+  }
+
+  return Math.round(numericValues.reduce((total, value) => total + value, 0) / numericValues.length);
+}
+
+function latestIso(values: Array<string | null>): string | null {
+  return values.reduce<string | null>((latest, value) => {
+    if (!value) {
+      return latest;
+    }
+
+    if (!latest || Date.parse(value) > Date.parse(latest)) {
+      return value;
+    }
+
+    return latest;
+  }, null);
 }

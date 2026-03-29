@@ -11,6 +11,7 @@ import {
 
 type ChartPoint = {
   createdAt: string;
+  epoch: number;
   failedProviders: string[];
   tickLabel: string;
 } & Record<string, number | string | string[] | null>;
@@ -28,6 +29,7 @@ const absoluteDateTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 });
 
+const compactTime = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
 const palette = ["#5eead4", "#7dd3fc", "#fbbf24", "#f87171", "#c084fc", "#a3e635", "#fb923c"];
 
 export default function LatencyChart(props: {
@@ -41,15 +43,19 @@ export default function LatencyChart(props: {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={props.chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+      <LineChart data={props.chartData} margin={{ top: 8, right: 32, bottom: 12, left: 6 }}>
         <CartesianGrid stroke="rgba(255, 255, 255, 0.04)" strokeDasharray="none" vertical={false} />
         <XAxis
-          dataKey="tickLabel"
+          dataKey="epoch"
+          type="number"
+          scale="time"
+          domain={["dataMin", "dataMax"]}
           minTickGap={28}
           stroke="#4a5568"
           tick={{ fill: "#6b7f94", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}
           tickLine={false}
           axisLine={{ stroke: "rgba(255, 255, 255, 0.06)" }}
+          tickFormatter={(v: number) => compactTime.format(new Date(v))}
         />
         <YAxis
           stroke="#4a5568"
