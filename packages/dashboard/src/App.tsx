@@ -490,11 +490,7 @@ export default function App() {
         <div className="card">
           <div className="section-header">
             <div>
-              <h2 className="section-title">
-                {selectedRegion === ALL_REGIONS
-                  ? "Global provider ranking"
-                  : "Provider ranking"}
-              </h2>
+              <h2 className="section-title">Provider ranking</h2>
               <p className="section-subtitle">
                 Average latency
                 {selectedRegion === ALL_REGIONS

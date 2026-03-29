@@ -23,6 +23,50 @@ type RankedProvider = {
   successRate: number;
 };
 
+function BarLabel(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  value?: number;
+  index?: number;
+  rows: RankedProvider[];
+}) {
+  const { x = 0, y = 0, width = 0, height = 0, index = 0, rows } = props;
+  const row = rows[index];
+  if (!row) return null;
+
+  const rateColor =
+    row.successRate >= 99
+      ? "var(--accent)"
+      : row.successRate >= 90
+        ? "var(--warning)"
+        : "var(--danger)";
+
+  return (
+    <g>
+      <text
+        x={x + width + 6}
+        y={y + height / 2}
+        dominantBaseline="central"
+        className="ranking-ms"
+      >
+        {row.avgMs} ms
+      </text>
+      <text
+        x={x + width + 6}
+        y={y + height / 2}
+        dx="4.5em"
+        dominantBaseline="central"
+        className="ranking-rate"
+        fill={rateColor}
+      >
+        {row.successRate.toFixed(1)}%
+      </text>
+    </g>
+  );
+}
+
 export default function GlobalRanking(props: { rows: RankedProvider[] }) {
   if (!props.rows.length) return null;
 
@@ -34,14 +78,14 @@ export default function GlobalRanking(props: { rows: RankedProvider[] }) {
         <BarChart
           data={props.rows}
           layout="vertical"
-          margin={{ top: 0, right: 64, bottom: 0, left: 0 }}
+          margin={{ top: 0, right: 120, bottom: 0, left: 0 }}
           barCategoryGap={6}
         >
           <XAxis type="number" hide domain={[0, maxMs * 1.15]} />
           <YAxis
             type="category"
             dataKey="provider"
-            width={100}
+            width={80}
             axisLine={false}
             tickLine={false}
             tick={{
@@ -50,7 +94,12 @@ export default function GlobalRanking(props: { rows: RankedProvider[] }) {
               fontFamily: "'DM Sans', sans-serif",
             }}
           />
-          <Bar dataKey="avgMs" radius={[0, 4, 4, 0]} isAnimationActive={false}>
+          <Bar
+            dataKey="avgMs"
+            radius={[0, 4, 4, 0]}
+            isAnimationActive={false}
+            label={<BarLabel rows={props.rows} />}
+          >
             {props.rows.map((entry, index) => (
               <Cell
                 key={entry.provider}
@@ -61,32 +110,6 @@ export default function GlobalRanking(props: { rows: RankedProvider[] }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-
-      {/* Overlay labels showing ms values */}
-      <div className="ranking-labels" style={{ top: 4 }}>
-        {props.rows.map((row) => (
-          <div
-            key={row.provider}
-            className="ranking-label"
-            style={{ height: 36 }}
-          >
-            <span className="ranking-ms">{row.avgMs} ms</span>
-            <span
-              className="ranking-rate"
-              style={{
-                color:
-                  row.successRate >= 99
-                    ? "var(--accent)"
-                    : row.successRate >= 90
-                      ? "var(--warning)"
-                      : "var(--danger)",
-              }}
-            >
-              {row.successRate.toFixed(1)}%
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
