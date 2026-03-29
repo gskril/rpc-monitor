@@ -7,9 +7,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { fetchLatest, fetchTimeseries } from "./lib/api";
-import type { LatestStat, TimeSeriesPoint } from "./types";
 
 const OVERVIEW_WINDOW_HOURS = 1;
 const DEFAULT_TIMESERIES_HOURS = 6;
@@ -44,134 +44,54 @@ type RegionLatencyRow = {
 };
 
 export default function App() {
-  const [overviewRows, setOverviewRows] = useState<LatestStat[]>([]);
-  const [timeseriesRows, setTimeseriesRows] = useState<TimeSeriesPoint[]>([]);
-  const [regionalStats, setRegionalStats] = useState<LatestStat[]>([]);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
   const [timeseriesHours, setTimeseriesHours] = useState(DEFAULT_TIMESERIES_HOURS);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const [overviewLoading, setOverviewLoading] = useState(true);
-  const [timeseriesLoading, setTimeseriesLoading] = useState(false);
-  const [regionalStatsLoading, setRegionalStatsLoading] = useState(false);
 
   const deferredRegion = useDeferredValue(selectedRegion);
   const deferredProvider = useDeferredValue(selectedProvider);
 
+  const overviewQuery = useQuery({
+    queryKey: ["latest", OVERVIEW_WINDOW_HOURS],
+    queryFn: () => fetchLatest(OVERVIEW_WINDOW_HOURS),
+  });
+
+  const overviewRows = overviewQuery.data?.rows ?? [];
+
+  // Set initial selections when overview data first loads
   useEffect(() => {
-    let cancelled = false;
+    if (overviewRows.length > 0 && !selectedRegion) {
+      const firstRow = overviewRows[0];
+      if (!firstRow) return;
 
-    async function loadDashboard() {
-      setOverviewLoading(true);
-      setDashboardError(null);
-
-      try {
-        const overview = await fetchLatest(OVERVIEW_WINDOW_HOURS);
-
-        if (cancelled) {
-          return;
-        }
-
-        setOverviewRows(overview.rows);
-
-        if (overview.rows.length > 0) {
-          const firstRow = overview.rows[0];
-
-          if (!firstRow) {
-            return;
-          }
-
-          startTransition(() => {
-            setSelectedRegion((current) => current || ALL_REGIONS);
-            setSelectedProvider((current) => current || firstRow.provider);
-          });
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setDashboardError(formatError(error));
-        }
-      } finally {
-        if (!cancelled) {
-          setOverviewLoading(false);
-        }
-      }
+      startTransition(() => {
+        setSelectedRegion((current) => current || ALL_REGIONS);
+        setSelectedProvider((current) => current || firstRow.provider);
+      });
     }
+  }, [overviewRows, selectedRegion]);
 
-    void loadDashboard();
+  const timeseriesQuery = useQuery({
+    queryKey: ["timeseries", deferredRegion, timeseriesHours],
+    queryFn: () => {
+      const params = deferredRegion === ALL_REGIONS
+        ? { hours: timeseriesHours }
+        : { hours: timeseriesHours, region: deferredRegion };
+      return fetchTimeseries(params);
+    },
+    enabled: !!deferredRegion,
+  });
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const timeseriesRows = timeseriesQuery.data?.rows ?? [];
 
-  useEffect(() => {
-    if (!deferredRegion) {
-      return;
-    }
+  const regionalStatsQuery = useQuery({
+    queryKey: ["latest", timeseriesHours],
+    queryFn: () => fetchLatest(timeseriesHours),
+  });
 
-    let cancelled = false;
+  const regionalStats = regionalStatsQuery.data?.rows ?? [];
 
-    async function loadTimeseries() {
-      setTimeseriesLoading(true);
-      setDashboardError(null);
-
-      try {
-        const params = deferredRegion === ALL_REGIONS
-          ? { hours: timeseriesHours }
-          : { hours: timeseriesHours, region: deferredRegion };
-        const response = await fetchTimeseries(params);
-
-        if (!cancelled) {
-          setTimeseriesRows(response.rows);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setDashboardError(formatError(error));
-        }
-      } finally {
-        if (!cancelled) {
-          setTimeseriesLoading(false);
-        }
-      }
-    }
-
-    void loadTimeseries();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [deferredRegion, timeseriesHours]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadRegionalStats() {
-      setRegionalStatsLoading(true);
-      setDashboardError(null);
-
-      try {
-        const response = await fetchLatest(timeseriesHours);
-
-        if (!cancelled) {
-          setRegionalStats(response.rows);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setDashboardError(formatError(error));
-        }
-      } finally {
-        if (!cancelled) {
-          setRegionalStatsLoading(false);
-        }
-      }
-    }
-
-    void loadRegionalStats();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [timeseriesHours]);
+  const dashboardError = overviewQuery.error ?? timeseriesQuery.error ?? regionalStatsQuery.error;
 
   const regions = useMemo(() => uniqueValues(overviewRows.map((row) => row.region)), [overviewRows]);
 
@@ -311,8 +231,8 @@ export default function App() {
         </div>
       </header>
 
-      {dashboardError ? <p className="banner error">{dashboardError}</p> : null}
-      {overviewLoading ? <p className="banner">Loading benchmark data...</p> : null}
+      {dashboardError ? <p className="banner error">{dashboardError.message}</p> : null}
+      {overviewQuery.isLoading ? <p className="banner">Loading benchmark data...</p> : null}
 
       <div className="card">
         <div className="toolbar">
@@ -372,7 +292,7 @@ export default function App() {
             </p>
           </div>
           <span className="chip">
-            {timeseriesLoading ? "Refreshing..." : selectedProvider || "All"}
+            {timeseriesQuery.isFetching ? "Refreshing..." : selectedProvider || "All"}
           </span>
         </div>
 
@@ -396,7 +316,7 @@ export default function App() {
             </p>
           </div>
           <span className="chip">
-            {regionalStatsLoading ? "Refreshing..." : `${regionLatencyRows.length} regions`}
+            {regionalStatsQuery.isFetching ? "Refreshing..." : `${regionLatencyRows.length} regions`}
           </span>
         </div>
 
@@ -446,14 +366,6 @@ function rateClass(rate: number): string {
   if (rate >= 99) return "rate-good";
   if (rate >= 90) return "rate-warn";
   return "rate-bad";
-}
-
-function formatError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
 }
 
 function uniqueValues(values: string[]): string[] {
