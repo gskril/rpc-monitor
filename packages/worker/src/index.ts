@@ -51,9 +51,15 @@ async function benchmarkProvider(
   provider: string,
   url: string,
 ): Promise<ProviderBenchmark> {
+  const abortController = new AbortController();
+  const overallTimeout = setTimeout(() => abortController.abort(), 5_000);
+
   const client = createPublicClient({
     chain: mainnet,
-    transport: http(url, { timeout: 5_000 }),
+    transport: http(url, {
+      timeout: 5_000,
+      fetchOptions: { signal: abortController.signal },
+    }),
   });
 
   const startedAt = performance.now();
@@ -80,8 +86,12 @@ async function benchmarkProvider(
       provider,
       responseMs: Math.max(1, Math.round(performance.now() - startedAt)),
       success: false,
-      error: formatError(error),
+      error: abortController.signal.aborted
+        ? "Request timed out (exceeded 5000ms)"
+        : formatError(error),
     };
+  } finally {
+    clearTimeout(overallTimeout);
   }
 }
 
