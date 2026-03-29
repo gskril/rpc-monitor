@@ -23,9 +23,7 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     providers.push({ name: "alchemy", url: alchemy(MAINNET, alchemyKey) });
   }
 
-  const quicknodeUrl =
-    normalizeUrl(readEnv(env, "QUICKNODE_URL")) ??
-    normalizeUrl(readEnv(env, "QUICKNODE_ENDPOINT"));
+  const quicknodeUrl = readEnv(env, "QUICKNODE_URL");
   const quicknodeAppName = readEnv(env, "QUICKNODE_APP_NAME");
   const quicknodeApiKey = readEnv(env, "QUICKNODE_API_KEY");
   if (quicknodeUrl) {
@@ -42,13 +40,8 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     providers.push({ name: "infura", url: infura(MAINNET, infuraKey) });
   }
 
-  const chainstackUrl =
-    normalizeUrl(readEnv(env, "CHAINSTACK_URL")) ??
-    normalizeUrl(readEnv(env, "CHAINSTACK_ENDPOINT"));
   const chainstackKey = readEnv(env, "CHAINSTACK_API_KEY");
-  if (chainstackUrl) {
-    providers.push({ name: "chainstack", url: chainstackUrl });
-  } else if (chainstackKey) {
+  if (chainstackKey) {
     providers.push({
       name: "chainstack",
       url: chainstack(MAINNET, chainstackKey),
@@ -56,10 +49,12 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
   }
 
   const ankrKey = readEnv(env, "ANKR_API_KEY");
-  providers.push({
-    name: "ankr",
-    url: ankrKey ? `https://rpc.ankr.com/eth/${ankrKey}` : ankr(MAINNET),
-  });
+  if (ankrKey) {
+    providers.push({
+      name: "ankr",
+      url: ankr(MAINNET, ankrKey),
+    });
+  }
 
   const goldskyKey = readEnv(env, "GOLDSKY_API_KEY");
   if (goldskyKey) {
@@ -71,11 +66,10 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
 
   providers.push({ name: "publicnode", url: publicNode(MAINNET) });
 
-  const drpcUrl = normalizeUrl(readEnv(env, "DRPC_URL"));
   const drpcKey = readEnv(env, "DRPC_API_KEY");
   providers.push({
     name: "drpc",
-    url: drpcUrl ?? drpc(MAINNET, drpcKey),
+    url: drpc(MAINNET, drpcKey),
   });
 
   return dedupeByName(providers);
@@ -89,16 +83,6 @@ function dedupeByName(providers: ProviderConfig[]): ProviderConfig[] {
   }
 
   return Array.from(unique.values());
-}
-
-function normalizeUrl(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  return value.startsWith("http://") || value.startsWith("https://")
-    ? value
-    : `https://${value}`;
 }
 
 function readEnv(env: NodeJS.ProcessEnv, key: string): string | undefined {

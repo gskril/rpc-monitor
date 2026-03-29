@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@rpc-monitor/shared": "workspace:*",
-    "evm-providers": "^0.5.7",
+    "evm-providers": "^0.6.1",
     "viem": "^2.37.6"
   },
   "devDependencies": {

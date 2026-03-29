@@ -40,7 +40,7 @@
       "name": "@rpc-monitor/worker",
       "dependencies": {
         "@rpc-monitor/shared": "workspace:*",
-        "evm-providers": "^0.5.7",
+        "evm-providers": "^0.6.1",
         "viem": "^2.37.6",
       },
       "devDependencies": {
@@ -283,7 +283,7 @@
 
     "eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
 
-    "evm-providers": ["evm-providers@0.5.8", "", {}, "sha512-5Dh3UtapdE4DVzXn+kzf0RxI10KIV0JHnvs3OuAnxHNsjadCC9E+ZOSdraYmbBsB8xjBHcub/xXfNAN/H9ciYg=="],
+    "evm-providers": ["evm-providers@0.6.1", "", {}, "sha512-AM3QFucQFOqYxda9TqSVC1rOOhtUtK0fU44DbJLTN/2yyNkMOTxqlsXzGtrN7RnpXcDHP8YFLBCOnNtIdHxRjw=="],
 
     "fdir": ["fdir@6.5.0", "", { "peerDependencies": { "picomatch": "^3 || ^4" }, "optionalPeers": ["picomatch"] }, "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="],
 

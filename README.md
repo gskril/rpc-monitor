@@ -35,7 +35,7 @@ The worker uses [`evm-providers`](https://www.npmjs.com/package/evm-providers) f
 Notes:
 
 - `alchemy`, `infura`, and `chainstack` use API-key style env vars.
-- `quicknode` supports either `QUICKNODE_ENDPOINT` or `QUICKNODE_APP_NAME` + `QUICKNODE_API_KEY`.
+- `quicknode` supports either `QUICKNODE_URL` or `QUICKNODE_APP_NAME` + `QUICKNODE_API_KEY`.
 - `drpc` works as a public endpoint by default and can use `DRPC_API_KEY` if provided.
 - `ankr` supports `ANKR_API_KEY` and falls back to its public endpoint when unset.
 - `publicnode` is included by default as a public endpoint.
@@ -177,10 +177,9 @@ Optional worker settings:
 
 - `ALCHEMY_API_KEY`
 - `INFURA_API_KEY`
-- `QUICKNODE_ENDPOINT`
+- `QUICKNODE_URL`
 - `QUICKNODE_APP_NAME`
 - `QUICKNODE_API_KEY`
-- `CHAINSTACK_ENDPOINT`
 - `CHAINSTACK_API_KEY`
 - `ANKR_API_KEY`
 - `DRPC_API_KEY`
