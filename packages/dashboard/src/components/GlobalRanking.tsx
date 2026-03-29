@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from "react";
 import {
   Bar,
   BarChart,
@@ -7,21 +6,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-const mql =
-  typeof window !== "undefined"
-    ? window.matchMedia("(max-width: 600px)")
-    : null;
-function subscribe(cb: () => void) {
-  mql?.addEventListener("change", cb);
-  return () => mql?.removeEventListener("change", cb);
-}
-function getSnapshot() {
-  return mql?.matches ?? false;
-}
-function useIsMobile() {
-  return useSyncExternalStore(subscribe, getSnapshot, () => false);
-}
 
 const palette = [
   "#5eead4",
@@ -84,7 +68,6 @@ function BarLabel(props: {
 }
 
 export default function GlobalRanking(props: { rows: RankedProvider[] }) {
-  const isMobile = useIsMobile();
   if (!props.rows.length) return null;
 
   const maxMs = Math.max(...props.rows.map((r) => r.avgMs));
@@ -95,7 +78,7 @@ export default function GlobalRanking(props: { rows: RankedProvider[] }) {
         <BarChart
           data={props.rows}
           layout="vertical"
-          margin={{ top: 0, right: isMobile ? 64 : 120, bottom: 0, left: 0 }}
+          margin={{ top: 0, right: 120, bottom: 0, left: 0 }}
           barCategoryGap={6}
         >
           <XAxis type="number" hide domain={[0, maxMs * 1.15]} />
