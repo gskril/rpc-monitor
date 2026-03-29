@@ -16,7 +16,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     return json({
       hours,
       rows,
-    });
+    }, { maxAge: 30 });
   }
 
   if (url.pathname === "/api/timeseries") {
@@ -30,11 +30,11 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       provider: provider ?? null,
       region: region ?? null,
       rows,
-    });
+    }, { maxAge: 30 });
   }
 
   if (url.pathname.startsWith("/api/")) {
-    return json({ error: "Not found" }, 404);
+    return json({ error: "Not found" }, { status: 404 });
   }
 
   return null;
@@ -44,11 +44,12 @@ export async function shutdownApi() {
   await closeSqlClient();
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, options?: { status?: number; maxAge?: number }): Response {
+  const { status = 200, maxAge = 0 } = options ?? {};
   return Response.json(data, {
     status,
     headers: {
-      "cache-control": "no-store",
+      "cache-control": maxAge > 0 ? `public, max-age=${maxAge}` : "no-store",
     },
   });
 }
