@@ -20,9 +20,13 @@
   --radius-sm: 8px;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   min-height: 100%;
 }
@@ -30,12 +34,25 @@ html, body, #root {
 body {
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(94, 234, 212, 0.06), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 0%, rgba(56, 140, 200, 0.05), transparent);
+    radial-gradient(
+      ellipse 80% 50% at 20% 0%,
+      rgba(94, 234, 212, 0.06),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 80% 0%,
+      rgba(56, 140, 200, 0.05),
+      transparent
+    );
   color: var(--text);
 }
 
-button, input, select, table { font: inherit; }
+button,
+input,
+select,
+table {
+  font: inherit;
+}
 
 /* ── Page shell ── */
 
@@ -86,8 +103,13 @@ button, input, select, table { font: inherit; }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .header h1 {
@@ -128,8 +150,12 @@ button, input, select, table { font: inherit; }
   border: 1px solid var(--border);
 }
 
-.header-metric:first-child { border-radius: var(--radius) 0 0 var(--radius); }
-.header-metric:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.header-metric:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+.header-metric:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
 
 .header-metric span {
   font-size: 0.7rem;
@@ -216,8 +242,13 @@ select {
   transition: border-color 0.15s;
 }
 
-select:hover { border-color: var(--border-active); }
-select:focus { outline: none; border-color: var(--accent); }
+select:hover {
+  border-color: var(--border-active);
+}
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 
 /* ── Chart section ── */
 
@@ -276,7 +307,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: 10px 16px;
   text-align: left;
   border-bottom: 1px solid var(--border);
@@ -327,9 +359,15 @@ tbody tr:hover {
   padding-left: 14px;
 }
 
-.rate-good { color: var(--accent); }
-.rate-warn { color: var(--warning); }
-.rate-bad { color: var(--danger); }
+.rate-good {
+  color: var(--accent);
+}
+.rate-warn {
+  color: var(--warning);
+}
+.rate-bad {
+  color: var(--danger);
+}
 
 /* ── Responsive ── */
 
@@ -367,21 +405,29 @@ tbody tr:hover {
     justify-content: space-between;
   }
 
-  .header-metric:first-child { border-radius: var(--radius) var(--radius) 0 0; }
-  .header-metric:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+  .header-metric:first-child {
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .header-metric:last-child {
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
 
   .toolbar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .toolbar-sep { display: none; }
+  .toolbar-sep {
+    display: none;
+  }
 
   .toolbar-group {
     justify-content: space-between;
   }
 
-  select { flex: 1; }
+  select {
+    flex: 1;
+  }
 
   th {
     min-width: 128px;

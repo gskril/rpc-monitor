@@ -25,7 +25,9 @@ const databaseUrl = requireEnv("DATABASE_URL");
 const providers = loadProviders(process.env);
 
 if (providers.length === 0) {
-  throw new Error("No RPC providers configured. Set at least one provider key or endpoint.");
+  throw new Error(
+    "No RPC providers configured. Set at least one provider key or endpoint.",
+  );
 }
 
 const db = createDatabase({
@@ -37,7 +39,9 @@ try {
   await migrateToLatest(db);
 
   const results = await Promise.all(
-    providers.map((provider) => benchmarkProvider(region, provider.name, provider.url)),
+    providers.map((provider) =>
+      benchmarkProvider(region, provider.name, provider.url),
+    ),
   );
 
   await insertBenchmarks(db, results);

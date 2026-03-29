@@ -47,7 +47,9 @@ type RegionLatencyRow = {
 export default function App() {
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
-  const [timeseriesHours, setTimeseriesHours] = useState(DEFAULT_TIMESERIES_HOURS);
+  const [timeseriesHours, setTimeseriesHours] = useState(
+    DEFAULT_TIMESERIES_HOURS,
+  );
 
   const deferredRegion = useDeferredValue(selectedRegion);
   const deferredProvider = useDeferredValue(selectedProvider);
@@ -75,9 +77,10 @@ export default function App() {
   const timeseriesQuery = useQuery({
     queryKey: ["timeseries", deferredRegion, timeseriesHours],
     queryFn: () => {
-      const params = deferredRegion === ALL_REGIONS
-        ? { hours: timeseriesHours }
-        : { hours: timeseriesHours, region: deferredRegion };
+      const params =
+        deferredRegion === ALL_REGIONS
+          ? { hours: timeseriesHours }
+          : { hours: timeseriesHours, region: deferredRegion };
       return fetchTimeseries(params);
     },
     enabled: !!deferredRegion,
@@ -119,14 +122,12 @@ export default function App() {
 
       for (const row of timeseriesRows) {
         const existing = points.get(row.createdAt);
-        const point =
-          existing ??
-          {
-            createdAt: row.createdAt,
-            epoch: Date.parse(row.createdAt),
-            failedProviders: [],
-            tickLabel: compactTime.format(new Date(row.createdAt)),
-          };
+        const point = existing ?? {
+          createdAt: row.createdAt,
+          epoch: Date.parse(row.createdAt),
+          failedProviders: [],
+          tickLabel: compactTime.format(new Date(row.createdAt)),
+        };
 
         point[row.provider] = row.success ? row.responseMs : null;
 
@@ -138,14 +139,18 @@ export default function App() {
       }
 
       return Array.from(points.values()).sort(
-        (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
+        (left, right) =>
+          Date.parse(left.createdAt) - Date.parse(right.createdAt),
       );
     }
 
     // When "all" is selected, average latency across regions per (timestamp, provider).
     // Timestamps from different regions may differ by a few seconds, so round to the
     // nearest minute before grouping so they collapse into a single data point.
-    const grouped = new Map<string, Map<string, { total: number; count: number; failed: boolean }>>();
+    const grouped = new Map<
+      string,
+      Map<string, { total: number; count: number; failed: boolean }>
+    >();
 
     for (const row of timeseriesRows) {
       const rounded = new Date(row.createdAt);
@@ -164,7 +169,11 @@ export default function App() {
           existing.total += row.responseMs;
           existing.count += 1;
         } else {
-          providerMap.set(row.provider, { total: row.responseMs, count: 1, failed: false });
+          providerMap.set(row.provider, {
+            total: row.responseMs,
+            count: 1,
+            failed: false,
+          });
         }
       } else {
         if (existing) {
@@ -185,7 +194,8 @@ export default function App() {
       };
 
       for (const [provider, stats] of providerMap) {
-        point[provider] = stats.count > 0 ? Math.round(stats.total / stats.count) : null;
+        point[provider] =
+          stats.count > 0 ? Math.round(stats.total / stats.count) : null;
         if (stats.failed && stats.count === 0) {
           point.failedProviders = [...point.failedProviders, provider];
         }
@@ -199,39 +209,44 @@ export default function App() {
     );
   }, [timeseriesRows, selectedRegion]);
 
-  const regionLatencyRows = useMemo<RegionLatencyRow[]>(
-    () => {
-      const providerRows = regionalStats
-        .filter((row) => row.provider === deferredProvider)
-        .map((row) => ({
-          averageLatencyMs: row.avgMs,
-          failedCount: row.sampleCount - row.successCount,
-          latestAt: row.latestAt,
-          p95Ms: row.p95Ms,
-          region: row.region,
-          sampleCount: row.sampleCount,
-          successRate: row.successRate,
-        }));
+  const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {
+    const providerRows = regionalStats
+      .filter((row) => row.provider === deferredProvider)
+      .map((row) => ({
+        averageLatencyMs: row.avgMs,
+        failedCount: row.sampleCount - row.successCount,
+        latestAt: row.latestAt,
+        p95Ms: row.p95Ms,
+        region: row.region,
+        sampleCount: row.sampleCount,
+        successRate: row.successRate,
+      }));
 
-      if (!providerRows.length) {
-        return providerRows;
-      }
+    if (!providerRows.length) {
+      return providerRows;
+    }
 
-      const aggregateRow: RegionLatencyRow = {
-        averageLatencyMs: averageNullable(providerRows.map((row) => row.averageLatencyMs)),
-        failedCount: providerRows.reduce((total, row) => total + row.failedCount, 0),
-        isAggregate: true,
-        latestAt: latestIso(providerRows.map((row) => row.latestAt)),
-        p95Ms: averageNullable(providerRows.map((row) => row.p95Ms)),
-        region: "All",
-        sampleCount: providerRows.reduce((total, row) => total + row.sampleCount, 0),
-        successRate: averageNullable(providerRows.map((row) => row.successRate)),
-      };
+    const aggregateRow: RegionLatencyRow = {
+      averageLatencyMs: averageNullable(
+        providerRows.map((row) => row.averageLatencyMs),
+      ),
+      failedCount: providerRows.reduce(
+        (total, row) => total + row.failedCount,
+        0,
+      ),
+      isAggregate: true,
+      latestAt: latestIso(providerRows.map((row) => row.latestAt)),
+      p95Ms: averageNullable(providerRows.map((row) => row.p95Ms)),
+      region: "All",
+      sampleCount: providerRows.reduce(
+        (total, row) => total + row.sampleCount,
+        0,
+      ),
+      successRate: averageNullable(providerRows.map((row) => row.successRate)),
+    };
 
-      return [aggregateRow, ...providerRows];
-    },
-    [regionalStats, deferredProvider],
-  );
+    return [aggregateRow, ...providerRows];
+  }, [regionalStats, deferredProvider]);
 
   return (
     <main className="page-shell">
@@ -239,7 +254,10 @@ export default function App() {
         <div className="header-left">
           <span className="header-tag">RPC Monitor</span>
           <h1>RPC Provider Benchmarks</h1>
-          <p className="header-note">All checks use the same <code>eth_call</code> to the ENS Universal Resolver</p>
+          <p className="header-note">
+            All checks use the same <code>eth_call</code> to the ENS Universal
+            Resolver
+          </p>
         </div>
         <div className="header-metrics">
           <div className="header-metric">
@@ -253,8 +271,12 @@ export default function App() {
         </div>
       </header>
 
-      {dashboardError ? <p className="banner error">{dashboardError.message}</p> : null}
-      {regionalStatsQuery.isLoading ? <p className="banner">Loading benchmark data...</p> : null}
+      {dashboardError ? (
+        <p className="banner error">{dashboardError.message}</p>
+      ) : null}
+      {regionalStatsQuery.isLoading ? (
+        <p className="banner">Loading benchmark data...</p>
+      ) : null}
 
       <div className="card">
         <div className="toolbar">
@@ -268,7 +290,9 @@ export default function App() {
             >
               <option value={ALL_REGIONS}>All regions</option>
               {regions.map((region) => (
-                <option key={region} value={region}>{region}</option>
+                <option key={region} value={region}>
+                  {region}
+                </option>
               ))}
             </select>
           </div>
@@ -284,7 +308,9 @@ export default function App() {
               }}
             >
               {providers.map((provider) => (
-                <option key={provider} value={provider}>{provider}</option>
+                <option key={provider} value={provider}>
+                  {provider}
+                </option>
               ))}
             </select>
           </div>
@@ -296,11 +322,15 @@ export default function App() {
             <select
               value={String(timeseriesHours)}
               onChange={(event) => {
-                startTransition(() => setTimeseriesHours(Number(event.target.value)));
+                startTransition(() =>
+                  setTimeseriesHours(Number(event.target.value)),
+                );
               }}
             >
               {[1, 3, 6, 12, 24, 72].map((hours) => (
-                <option key={hours} value={hours}>Last {hours}h</option>
+                <option key={hours} value={hours}>
+                  Last {hours}h
+                </option>
               ))}
             </select>
           </div>
@@ -310,16 +340,24 @@ export default function App() {
           <div>
             <h2 className="section-title">Latency over time</h2>
             <p className="section-subtitle">
-              All providers{selectedRegion === ALL_REGIONS ? " averaged across all regions" : ` in ${selectedRegion || "..."}`} &middot; {timeseriesHours}h window
+              All providers
+              {selectedRegion === ALL_REGIONS
+                ? " averaged across all regions"
+                : ` in ${selectedRegion || "..."}`}{" "}
+              &middot; {timeseriesHours}h window
             </p>
           </div>
           <span className="chip">
-            {timeseriesQuery.isFetching ? "Refreshing..." : selectedProvider || "All"}
+            {timeseriesQuery.isFetching
+              ? "Refreshing..."
+              : selectedProvider || "All"}
           </span>
         </div>
 
         <div className="chart-shell">
-          <Suspense fallback={<p className="chart-loading">Loading chart...</p>}>
+          <Suspense
+            fallback={<p className="chart-loading">Loading chart...</p>}
+          >
             <LatencyChart
               chartData={chartData}
               highlightedProvider={selectedProvider}
@@ -334,11 +372,14 @@ export default function App() {
           <div>
             <h2 className="section-title">Regional averages</h2>
             <p className="section-subtitle">
-              {selectedProvider || "..."} across all regions &middot; {timeseriesHours}h window
+              {selectedProvider || "..."} across all regions &middot;{" "}
+              {timeseriesHours}h window
             </p>
           </div>
           <span className="chip">
-            {regionalStatsQuery.isFetching ? "Refreshing..." : `${regionLatencyRows.length} regions`}
+            {regionalStatsQuery.isFetching
+              ? "Refreshing..."
+              : `${regionLatencyRows.length} regions`}
           </span>
         </div>
 
@@ -370,18 +411,28 @@ export default function App() {
                   }
                 >
                   <td>{row.region}</td>
-                  <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "--"}</td>
+                  <td>
+                    {row.averageLatencyMs !== null
+                      ? `${row.averageLatencyMs} ms`
+                      : "--"}
+                  </td>
                   <td>{row.p95Ms !== null ? `${row.p95Ms} ms` : "--"}</td>
                   <td>
                     {row.successRate !== null ? (
                       <span className={rateClass(row.successRate)}>
                         {row.successRate.toFixed(1)}%
                       </span>
-                    ) : "--"}
+                    ) : (
+                      "--"
+                    )}
                   </td>
                   <td>{row.sampleCount}</td>
                   <td>{row.failedCount || "--"}</td>
-                  <td>{row.latestAt ? absoluteDateTime.format(new Date(row.latestAt)) : "--"}</td>
+                  <td>
+                    {row.latestAt
+                      ? absoluteDateTime.format(new Date(row.latestAt))
+                      : "--"}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -399,17 +450,24 @@ function rateClass(rate: number): string {
 }
 
 function uniqueValues(values: string[]): string[] {
-  return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
+  return Array.from(new Set(values)).sort((left, right) =>
+    left.localeCompare(right),
+  );
 }
 
 function averageNullable(values: Array<number | null>): number | null {
-  const numericValues = values.filter((value): value is number => value !== null);
+  const numericValues = values.filter(
+    (value): value is number => value !== null,
+  );
 
   if (!numericValues.length) {
     return null;
   }
 
-  return Math.round(numericValues.reduce((total, value) => total + value, 0) / numericValues.length);
+  return Math.round(
+    numericValues.reduce((total, value) => total + value, 0) /
+      numericValues.length,
+  );
 }
 
 function latestIso(values: Array<string | null>): string | null {

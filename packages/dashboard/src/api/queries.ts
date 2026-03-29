@@ -1,4 +1,9 @@
-import { createDatabase, destroyDatabase, migrateToLatest, sql } from "@rpc-monitor/shared";
+import {
+  createDatabase,
+  destroyDatabase,
+  migrateToLatest,
+  sql,
+} from "@rpc-monitor/shared";
 import type { LatestStat, TimeSeriesPoint } from "../types";
 
 let databasePromise: Promise<ReturnType<typeof createDatabase>> | undefined;
@@ -75,7 +80,11 @@ export async function timeSeries(params: {
       "response_ms",
       "success",
     ])
-    .where("created_at", ">=", sql<Date>`now() - make_interval(hours => ${params.hours})`)
+    .where(
+      "created_at",
+      ">=",
+      sql<Date>`now() - make_interval(hours => ${params.hours})`,
+    )
     .orderBy("created_at asc");
 
   if (params.provider) {

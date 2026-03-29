@@ -1,6 +1,8 @@
 import { closeSqlClient, latestStats, timeSeries } from "./queries";
 
-export async function handleApiRequest(request: Request): Promise<Response | null> {
+export async function handleApiRequest(
+  request: Request,
+): Promise<Response | null> {
   const url = new URL(request.url);
 
   if (url.pathname === "/api/health") {
@@ -13,10 +15,13 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     const hours = parseHours(url.searchParams.get("hours"), 1);
     const rows = await latestStats(hours);
 
-    return json({
-      hours,
-      rows,
-    }, { maxAge: 30 });
+    return json(
+      {
+        hours,
+        rows,
+      },
+      { maxAge: 30 },
+    );
   }
 
   if (url.pathname === "/api/timeseries") {
@@ -25,12 +30,15 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     const region = readOptional(url.searchParams.get("region"));
     const rows = await timeSeries({ hours, provider, region });
 
-    return json({
-      hours,
-      provider: provider ?? null,
-      region: region ?? null,
-      rows,
-    }, { maxAge: 30 });
+    return json(
+      {
+        hours,
+        provider: provider ?? null,
+        region: region ?? null,
+        rows,
+      },
+      { maxAge: 30 },
+    );
   }
 
   if (url.pathname.startsWith("/api/")) {
@@ -44,11 +52,15 @@ export async function shutdownApi() {
   await closeSqlClient();
 }
 
-function json(data: unknown, options?: { status?: number; maxAge?: number }): Response {
+function json(
+  data: unknown,
+  options?: { status?: number; maxAge?: number },
+): Response {
   const { status = 200, maxAge = 0 } = options ?? {};
-  const cacheControl = maxAge > 0
-    ? `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${maxAge}`
-    : "no-store";
+  const cacheControl =
+    maxAge > 0
+      ? `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${maxAge}`
+      : "no-store";
   return Response.json(data, {
     status,
     headers: {

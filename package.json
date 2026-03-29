@@ -17,6 +17,7 @@
     "db:migrate": "cd packages/shared && bun run migrate",
     "worker": "cd packages/worker && bun run start",
     "dashboard": "cd packages/dashboard && bun run dev",
-    "dashboard:server": "cd packages/dashboard && bun run start"
+    "dashboard:server": "cd packages/dashboard && bun run start",
+    "format": "bunx prettier --write \"**/*.{ts,tsx,js,jsx,json,css,html}\""
   }
 }

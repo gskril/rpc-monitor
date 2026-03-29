@@ -23,7 +23,9 @@ export async function fetchTimeseries(params: {
     searchParams.set("region", params.region);
   }
 
-  return request<TimeSeriesResponse>(`/api/timeseries?${searchParams.toString()}`);
+  return request<TimeSeriesResponse>(
+    `/api/timeseries?${searchParams.toString()}`,
+  );
 }
 
 async function request<T>(path: string): Promise<T> {

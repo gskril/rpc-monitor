@@ -29,8 +29,19 @@ const absoluteDateTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 });
 
-const compactTime = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
-const palette = ["#5eead4", "#7dd3fc", "#fbbf24", "#f87171", "#c084fc", "#a3e635", "#fb923c"];
+const compactTime = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit",
+});
+const palette = [
+  "#5eead4",
+  "#7dd3fc",
+  "#fbbf24",
+  "#f87171",
+  "#c084fc",
+  "#a3e635",
+  "#fb923c",
+];
 
 export default function LatencyChart(props: {
   chartData: ChartPoint[];
@@ -38,13 +49,23 @@ export default function LatencyChart(props: {
   providerKeys: string[];
 }) {
   const colors = new Map(
-    props.providerKeys.map((provider, index) => [provider, palette[index % palette.length] ?? "#7dd3fc"]),
+    props.providerKeys.map((provider, index) => [
+      provider,
+      palette[index % palette.length] ?? "#7dd3fc",
+    ]),
   );
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={props.chartData} margin={{ top: 8, right: 32, bottom: 12, left: 6 }}>
-        <CartesianGrid stroke="rgba(255, 255, 255, 0.04)" strokeDasharray="none" vertical={false} />
+      <LineChart
+        data={props.chartData}
+        margin={{ top: 8, right: 32, bottom: 12, left: 6 }}
+      >
+        <CartesianGrid
+          stroke="rgba(255, 255, 255, 0.04)"
+          strokeDasharray="none"
+          vertical={false}
+        />
         <XAxis
           dataKey="epoch"
           type="number"
@@ -52,7 +73,11 @@ export default function LatencyChart(props: {
           domain={["dataMin", "dataMax"]}
           minTickGap={28}
           stroke="#4a5568"
-          tick={{ fill: "#6b7f94", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}
+          tick={{
+            fill: "#6b7f94",
+            fontSize: 12,
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}
           tickLine={false}
           axisLine={{ stroke: "rgba(255, 255, 255, 0.06)" }}
           tickFormatter={(v: number) => compactTime.format(new Date(v))}
@@ -60,7 +85,11 @@ export default function LatencyChart(props: {
         <YAxis
           stroke="#4a5568"
           width={52}
-          tick={{ fill: "#6b7f94", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}
+          tick={{
+            fill: "#6b7f94",
+            fontSize: 12,
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v: number) => `${v}ms`}
@@ -70,14 +99,20 @@ export default function LatencyChart(props: {
             <ChartTooltip
               active={active}
               colors={colors}
-              payload={payload as unknown as readonly TooltipPayloadEntry[] | undefined}
+              payload={
+                payload as unknown as readonly TooltipPayloadEntry[] | undefined
+              }
               providerKeys={props.providerKeys}
             />
           )}
         />
         <Legend
           iconType="plainline"
-          wrapperStyle={{ fontSize: "0.8rem", fontFamily: "'DM Sans', sans-serif", paddingTop: 8 }}
+          wrapperStyle={{
+            fontSize: "0.8rem",
+            fontFamily: "'DM Sans', sans-serif",
+            paddingTop: 8,
+          }}
         />
         {props.providerKeys.map((provider) => {
           const highlighted = provider === props.highlightedProvider;
@@ -89,7 +124,9 @@ export default function LatencyChart(props: {
               dataKey={provider}
               name={provider}
               stroke={colors.get(provider) ?? "#7dd3fc"}
-              strokeOpacity={highlighted || !props.highlightedProvider ? 1 : 0.2}
+              strokeOpacity={
+                highlighted || !props.highlightedProvider ? 1 : 0.2
+              }
               strokeWidth={highlighted ? 2.5 : 1.5}
               dot={false}
               activeDot={{ r: highlighted ? 4 : 3, strokeWidth: 0 }}
@@ -125,7 +162,9 @@ function ChartTooltip(props: {
 
       return typeof value === "number" ? { provider, value } : null;
     })
-    .filter((entry): entry is { provider: string; value: number } => entry !== null)
+    .filter(
+      (entry): entry is { provider: string; value: number } => entry !== null,
+    )
     .sort((left, right) => left.value - right.value);
 
   return (
@@ -140,13 +179,38 @@ function ChartTooltip(props: {
         lineHeight: 1.5,
       }}
     >
-      <p style={{ margin: "0 0 6px", color: "#8a9bb0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "0.75rem" }}>
+      <p
+        style={{
+          margin: "0 0 6px",
+          color: "#8a9bb0",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "0.75rem",
+        }}
+      >
         {absoluteDateTime.format(new Date(point.createdAt))}
       </p>
       {values.map(({ provider, value }) => (
-        <p key={provider} style={{ margin: "2px 0", color: props.colors.get(provider) ?? "#e8edf2" }}>
-          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: props.colors.get(provider), marginRight: 6 }} />
-          {provider}: <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{value}ms</span>
+        <p
+          key={provider}
+          style={{
+            margin: "2px 0",
+            color: props.colors.get(provider) ?? "#e8edf2",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              background: props.colors.get(provider),
+              marginRight: 6,
+            }}
+          />
+          {provider}:{" "}
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+            {value}ms
+          </span>
         </p>
       ))}
       {point.failedProviders.length ? (

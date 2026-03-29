@@ -9,7 +9,9 @@ type CreateDatabaseOptions = {
   maxConnections?: number;
 };
 
-export function createDatabase(options: CreateDatabaseOptions): Kysely<Database> {
+export function createDatabase(
+  options: CreateDatabaseOptions,
+): Kysely<Database> {
   return new Kysely<Database>({
     dialect: new PostgresDialect({
       pool: new Pool({
