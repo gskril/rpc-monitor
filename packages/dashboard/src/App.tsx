@@ -27,6 +27,12 @@ const compactTime = new Intl.DateTimeFormat(undefined, {
 
 const LatencyChart = lazy(() => import("./components/LatencyChart"));
 
+type ChartDatum = {
+  createdAt: string;
+  failedProviders: string[];
+  tickLabel: string;
+} & Record<string, number | string | string[] | null>;
+
 export default function App() {
   const [overviewRows, setOverviewRows] = useState<LatestStat[]>([]);
   const [availabilityRows, setAvailabilityRows] = useState<LatestStat[]>([]);
@@ -39,7 +45,6 @@ export default function App() {
   const [timeseriesLoading, setTimeseriesLoading] = useState(false);
 
   const deferredRegion = useDeferredValue(selectedRegion);
-  const deferredProvider = useDeferredValue(selectedProvider);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +97,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!deferredRegion || !deferredProvider) {
+    if (!deferredRegion) {
       return;
     }
 
@@ -105,7 +110,6 @@ export default function App() {
       try {
         const response = await fetchTimeseries({
           hours: timeseriesHours,
-          provider: deferredProvider,
           region: deferredRegion,
         });
 
@@ -128,7 +132,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [deferredProvider, deferredRegion, timeseriesHours]);
+  }, [deferredRegion, timeseriesHours]);
 
   const regions = useMemo(
     () => uniqueValues(overviewRows.map((row) => row.region)),
@@ -157,16 +161,37 @@ export default function App() {
     (row) => row.region === selectedRegion && row.provider === selectedProvider,
   );
 
-  const chartData = useMemo(
-    () =>
-      timeseriesRows.map((row) => ({
-        ...row,
-        failureMs: row.success ? null : row.responseMs,
-        successMs: row.success ? row.responseMs : null,
-        tickLabel: compactTime.format(new Date(row.createdAt)),
-      })),
-    [timeseriesRows],
+  const chartProviders = useMemo(
+    () => providers.filter((provider) => timeseriesRows.some((row) => row.provider === provider)),
+    [providers, timeseriesRows],
   );
+
+  const chartData = useMemo<ChartDatum[]>(() => {
+    const points = new Map<string, ChartDatum>();
+
+    for (const row of timeseriesRows) {
+      const existing = points.get(row.createdAt);
+      const point =
+        existing ??
+        {
+          createdAt: row.createdAt,
+          failedProviders: [],
+          tickLabel: compactTime.format(new Date(row.createdAt)),
+        };
+
+      point[row.provider] = row.success ? row.responseMs : null;
+
+      if (!row.success && !point.failedProviders.includes(row.provider)) {
+        point.failedProviders = [...point.failedProviders, row.provider];
+      }
+
+      points.set(row.createdAt, point);
+    }
+
+    return Array.from(points.values()).sort(
+      (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
+    );
+  }, [timeseriesRows]);
 
   return (
     <main className="page-shell">
@@ -201,7 +226,7 @@ export default function App() {
       <section className="panel controls-panel">
         <div className="controls-header">
           <h2>Time series filters</h2>
-          <p>Scope the chart to one provider-region pair.</p>
+          <p>Compare every provider in one Railway region and use the provider filter to highlight a line.</p>
         </div>
         <div className="controls-grid">
           <label>
@@ -224,7 +249,7 @@ export default function App() {
           </label>
 
           <label>
-            <span>Provider</span>
+            <span>Highlight provider</span>
             <select
               value={selectedProvider}
               onChange={(event) => {
@@ -267,16 +292,25 @@ export default function App() {
           <div>
             <h2>Latency over time</h2>
             <p>
-              {selectedProvider || "Select a provider"} in {selectedRegion || "a region"} over the
-              last {timeseriesHours} hours
+              All providers in {selectedRegion || "a region"} over the last {timeseriesHours} hours
             </p>
           </div>
-          {timeseriesLoading ? <span className="status-chip">Refreshing…</span> : null}
+          <span className="status-chip">
+            {timeseriesLoading
+              ? "Refreshing…"
+              : selectedProvider
+                ? `Highlight: ${selectedProvider}`
+                : "All providers"}
+          </span>
         </div>
 
         <div className="chart-shell">
           <Suspense fallback={<p className="chart-loading">Loading chart...</p>}>
-            <LatencyChart chartData={chartData} />
+            <LatencyChart
+              chartData={chartData}
+              highlightedProvider={selectedProvider}
+              providerKeys={chartProviders}
+            />
           </Suspense>
         </div>
       </section>
