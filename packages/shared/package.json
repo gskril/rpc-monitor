@@ -1,0 +1,20 @@
+{
+  "name": "@ens-monitor/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "migrate": "bun ./src/migrate.ts",
+    "check": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "kysely": "^0.28.8",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.6",
+    "typescript": "^5.9.3"
+  }
+}

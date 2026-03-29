@@ -1,0 +1,18 @@
+{
+  "name": "@ens-monitor/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "build": "bun build ./src/index.ts --target bun --outdir ./dist",
+    "check": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "@ens-monitor/shared": "workspace:*",
+    "evm-providers": "^0.5.7",
+    "viem": "^2.37.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

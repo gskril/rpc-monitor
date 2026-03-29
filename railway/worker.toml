@@ -1,0 +1,16 @@
+[build]
+builder = "RAILPACK"
+buildCommand = "bun install"
+watchPatterns = [
+  "/railway/worker.toml",
+  "/packages/worker/**",
+  "/packages/shared/**",
+  "/package.json",
+  "/bun.lock",
+  "/tsconfig.base.json",
+]
+
+[deploy]
+startCommand = "bun --cwd packages/worker run start"
+restartPolicyType = "NEVER"
+cronSchedule = "*/5 * * * *"

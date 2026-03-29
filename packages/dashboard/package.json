@@ -1,0 +1,28 @@
+{
+  "name": "@ens-monitor/dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "bun run ./src/server.ts",
+    "build:client": "vite build",
+    "build:server": "bun build ./src/server.ts --target bun --outdir ./dist",
+    "build": "bun run build:client && bun run build:server",
+    "preview": "vite preview",
+    "start": "bun run ./dist/server.js",
+    "check": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "@ens-monitor/shared": "workspace:*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react-swc": "^4.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}

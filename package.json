@@ -1,0 +1,22 @@
+{
+  "name": "ens-rpc-latency-monitor",
+  "private": true,
+  "packageManager": "bun@1.3.6",
+  "devDependencies": {
+    "bun-types": "^1.3.6"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:worker": "cd packages/worker && bun run build",
+    "build:dashboard": "cd packages/dashboard && bun run build",
+    "check:shared": "cd packages/shared && bun run check",
+    "check:worker": "cd packages/worker && bun run check",
+    "check:dashboard": "cd packages/dashboard && bun run check",
+    "db:migrate": "cd packages/shared && bun run migrate",
+    "worker": "cd packages/worker && bun run start",
+    "dashboard": "cd packages/dashboard && bun run dev",
+    "dashboard:server": "cd packages/dashboard && bun run start"
+  }
+}
