@@ -369,6 +369,41 @@ tbody tr:hover {
   color: var(--danger);
 }
 
+/* ── Global ranking bar chart ── */
+
+.ranking-chart {
+  position: relative;
+  padding: 8px 16px 12px;
+}
+
+.ranking-labels {
+  position: absolute;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ranking-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.ranking-ms {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.ranking-rate {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  min-width: 44px;
+  text-align: right;
+}
+
 /* ── Responsive ── */
 
 @media (max-width: 900px) {

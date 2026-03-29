@@ -25,6 +25,7 @@ const compactTime = new Intl.DateTimeFormat(undefined, {
 });
 
 const LatencyChart = lazy(() => import("./components/LatencyChart"));
+const GlobalRanking = lazy(() => import("./components/GlobalRanking"));
 
 type ChartDatum = {
   createdAt: string;
@@ -208,6 +209,46 @@ export default function App() {
       (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
     );
   }, [timeseriesRows, selectedRegion]);
+
+  const globalRanking = useMemo(() => {
+    const byProvider = new Map<
+      string,
+      {
+        totalMs: number;
+        count: number;
+        successTotal: number;
+        rateCount: number;
+      }
+    >();
+
+    for (const row of regionalStats) {
+      const existing = byProvider.get(row.provider);
+      if (existing) {
+        if (row.avgMs !== null) {
+          existing.totalMs += row.avgMs;
+          existing.count += 1;
+        }
+        existing.successTotal += row.successRate;
+        existing.rateCount += 1;
+      } else {
+        byProvider.set(row.provider, {
+          totalMs: row.avgMs ?? 0,
+          count: row.avgMs !== null ? 1 : 0,
+          successTotal: row.successRate,
+          rateCount: 1,
+        });
+      }
+    }
+
+    return Array.from(byProvider.entries())
+      .filter(([, stats]) => stats.count > 0)
+      .map(([provider, stats]) => ({
+        provider,
+        avgMs: Math.round(stats.totalMs / stats.count),
+        successRate: stats.successTotal / stats.rateCount,
+      }))
+      .sort((a, b) => a.avgMs - b.avgMs);
+  }, [regionalStats]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {
     const providerRows = regionalStats
@@ -439,6 +480,28 @@ export default function App() {
           </table>
         </div>
       </div>
+
+      {globalRanking.length > 0 && (
+        <div className="card">
+          <div className="section-header">
+            <div>
+              <h2 className="section-title">Global provider ranking</h2>
+              <p className="section-subtitle">
+                Average latency across all regions &middot; {timeseriesHours}h
+                window
+              </p>
+            </div>
+            <span className="chip">
+              {regionalStatsQuery.isFetching
+                ? "Refreshing..."
+                : `${globalRanking.length} providers`}
+            </span>
+          </div>
+          <Suspense fallback={null}>
+            <GlobalRanking rows={globalRanking} />
+          </Suspense>
+        </div>
+      )}
     </main>
   );
 }
