@@ -13,6 +13,7 @@ import type { LatestStat, TimeSeriesPoint } from "./types";
 
 const OVERVIEW_WINDOW_HOURS = 1;
 const DEFAULT_TIMESERIES_HOURS = 6;
+const ALL_REGIONS = "all";
 
 const absoluteDateTime = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
@@ -81,7 +82,7 @@ export default function App() {
           }
 
           startTransition(() => {
-            setSelectedRegion((current) => current || firstRow.region);
+            setSelectedRegion((current) => current || ALL_REGIONS);
             setSelectedProvider((current) => current || firstRow.provider);
           });
         }
@@ -115,10 +116,10 @@ export default function App() {
       setDashboardError(null);
 
       try {
-        const response = await fetchTimeseries({
-          hours: timeseriesHours,
-          region: deferredRegion,
-        });
+        const params = deferredRegion === ALL_REGIONS
+          ? { hours: timeseriesHours }
+          : { hours: timeseriesHours, region: deferredRegion };
+        const response = await fetchTimeseries(params);
 
         if (!cancelled) {
           setTimeseriesRows(response.rows);
@@ -203,31 +204,84 @@ export default function App() {
   );
 
   const chartData = useMemo<ChartDatum[]>(() => {
-    const points = new Map<string, ChartDatum>();
+    const isAll = selectedRegion === ALL_REGIONS;
 
-    for (const row of timeseriesRows) {
-      const existing = points.get(row.createdAt);
-      const point =
-        existing ??
-        {
-          createdAt: row.createdAt,
-          failedProviders: [],
-          tickLabel: compactTime.format(new Date(row.createdAt)),
-        };
+    if (!isAll) {
+      const points = new Map<string, ChartDatum>();
 
-      point[row.provider] = row.success ? row.responseMs : null;
+      for (const row of timeseriesRows) {
+        const existing = points.get(row.createdAt);
+        const point =
+          existing ??
+          {
+            createdAt: row.createdAt,
+            failedProviders: [],
+            tickLabel: compactTime.format(new Date(row.createdAt)),
+          };
 
-      if (!row.success && !point.failedProviders.includes(row.provider)) {
-        point.failedProviders = [...point.failedProviders, row.provider];
+        point[row.provider] = row.success ? row.responseMs : null;
+
+        if (!row.success && !point.failedProviders.includes(row.provider)) {
+          point.failedProviders = [...point.failedProviders, row.provider];
+        }
+
+        points.set(row.createdAt, point);
       }
 
-      points.set(row.createdAt, point);
+      return Array.from(points.values()).sort(
+        (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
+      );
     }
 
-    return Array.from(points.values()).sort(
+    // When "all" is selected, average latency across regions per (timestamp, provider)
+    const grouped = new Map<string, Map<string, { total: number; count: number; failed: boolean }>>();
+
+    for (const row of timeseriesRows) {
+      let providerMap = grouped.get(row.createdAt);
+      if (!providerMap) {
+        providerMap = new Map();
+        grouped.set(row.createdAt, providerMap);
+      }
+
+      const existing = providerMap.get(row.provider);
+      if (row.success) {
+        if (existing) {
+          existing.total += row.responseMs;
+          existing.count += 1;
+        } else {
+          providerMap.set(row.provider, { total: row.responseMs, count: 1, failed: false });
+        }
+      } else {
+        if (existing) {
+          existing.failed = true;
+        } else {
+          providerMap.set(row.provider, { total: 0, count: 0, failed: true });
+        }
+      }
+    }
+
+    const points: ChartDatum[] = [];
+    for (const [createdAt, providerMap] of grouped) {
+      const point: ChartDatum = {
+        createdAt,
+        failedProviders: [],
+        tickLabel: compactTime.format(new Date(createdAt)),
+      };
+
+      for (const [provider, stats] of providerMap) {
+        point[provider] = stats.count > 0 ? Math.round(stats.total / stats.count) : null;
+        if (stats.failed && stats.count === 0) {
+          point.failedProviders = [...point.failedProviders, provider];
+        }
+      }
+
+      points.push(point);
+    }
+
+    return points.sort(
       (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
     );
-  }, [timeseriesRows]);
+  }, [timeseriesRows, selectedRegion]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(
     () =>
@@ -298,6 +352,7 @@ export default function App() {
                 startTransition(() => setSelectedRegion(event.target.value));
               }}
             >
+              <option value={ALL_REGIONS}>All regions</option>
               {regions.map((region) => (
                 <option key={region} value={region}>{region}</option>
               ))}
@@ -341,7 +396,7 @@ export default function App() {
           <div>
             <h2 className="section-title">Latency over time</h2>
             <p className="section-subtitle">
-              All providers in {selectedRegion || "..."} &middot; {timeseriesHours}h window
+              All providers{selectedRegion === ALL_REGIONS ? " averaged across all regions" : ` in ${selectedRegion || "..."}`} &middot; {timeseriesHours}h window
             </p>
           </div>
           <span className="chip">
@@ -390,7 +445,7 @@ export default function App() {
               {regionLatencyRows.map((row) => (
                 <tr
                   key={row.region}
-                  className={row.region === selectedRegion ? "selected-row" : undefined}
+                  className={row.region === selectedRegion && selectedRegion !== ALL_REGIONS ? "selected-row" : undefined}
                 >
                   <td>{row.region}</td>
                   <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "--"}</td>
