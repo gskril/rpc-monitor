@@ -40,7 +40,7 @@ export default function LatencyChart(props: {
   );
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={300} style={{ padding: 6 }}>
       <LineChart data={props.chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
         <CartesianGrid stroke="rgba(255, 255, 255, 0.04)" strokeDasharray="none" vertical={false} />
         <XAxis

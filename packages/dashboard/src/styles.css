@@ -226,7 +226,7 @@ select:focus { outline: none; border-color: var(--accent); }
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px 4px;
+  padding: 12px 16px;
 }
 
 .section-title {
@@ -253,7 +253,7 @@ select:focus { outline: none; border-color: var(--accent); }
 
 .chart-shell {
   height: 300px;
-  padding: 0 8px 4px 0;
+  padding: 0 8px;
 }
 
 .chart-loading {
@@ -384,14 +384,14 @@ tbody tr:hover {
   select { flex: 1; }
 
   th {
-    min-width: 90px;
+    min-width: 128px;
   }
 
   th:first-child {
-    min-width: 110px;
+    min-width: 140px;
   }
 
   th:last-child {
-    min-width: 120px;
+    min-width: 180px;
   }
 }
