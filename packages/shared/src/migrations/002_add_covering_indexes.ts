@@ -6,7 +6,7 @@ export const addCoveringIndexesMigration: Migration = {
     // windowed CTE that filters by created_at and reads region, provider,
     // success, and response_ms.  Replaces the old created_at-only index.
     await sql`
-      create index concurrently if not exists idx_benchmarks_created_at_covering
+      create index if not exists idx_benchmarks_created_at_covering
       on benchmarks (created_at desc)
       include (region, provider, success, response_ms)
     `.execute(db);
@@ -18,7 +18,7 @@ export const addCoveringIndexesMigration: Migration = {
     // Composite index for timeSeries filtered queries (provider + optional
     // region + time range).  Replaces the old (region, provider) index.
     await sql`
-      create index concurrently if not exists idx_benchmarks_provider_region_created_at
+      create index if not exists idx_benchmarks_provider_region_created_at
       on benchmarks (provider, region, created_at desc)
       include (success, response_ms, error)
     `.execute(db);
