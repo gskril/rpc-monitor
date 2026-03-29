@@ -1,32 +1,16 @@
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
 import {
   createDatabase,
   destroyDatabase,
   migrateToLatest,
 } from "@rpc-monitor/shared";
 
-import {
-  BENCHMARK_CALLDATA,
-  BENCHMARK_NAME,
-  UNIVERSAL_RESOLVER_ADDRESS,
-  decodeResolvedAddress,
-} from "./ens";
 import { insertBenchmarks } from "./db";
 import { loadProviders } from "./providers";
 
-type JsonRpcSuccess = {
-  id: string;
-  jsonrpc: "2.0";
-  result: `0x${string}`;
-};
-
-type JsonRpcFailure = {
-  id: string;
-  jsonrpc: "2.0";
-  error: {
-    code: number;
-    message: string;
-  };
-};
+const BENCHMARK_NAME = "vitalik.eth";
 
 export type ProviderBenchmark = {
   region: string;
@@ -38,7 +22,6 @@ export type ProviderBenchmark = {
 
 const region = requireEnv("REGION");
 const databaseUrl = requireEnv("DATABASE_URL");
-const timeoutMs = parsePositiveInt(process.env.REQUEST_TIMEOUT_MS, 15_000);
 const providers = loadProviders(process.env);
 
 if (providers.length === 0) {
@@ -54,7 +37,7 @@ try {
   await migrateToLatest(db);
 
   const results = await Promise.all(
-    providers.map((provider) => benchmarkProvider(region, provider.name, provider.url, timeoutMs)),
+    providers.map((provider) => benchmarkProvider(region, provider.name, provider.url)),
   );
 
   await insertBenchmarks(db, results);
@@ -67,44 +50,22 @@ async function benchmarkProvider(
   runRegion: string,
   provider: string,
   url: string,
-  requestTimeoutMs: number,
 ): Promise<ProviderBenchmark> {
+  const client = createPublicClient({
+    chain: mainnet,
+    transport: http(url, { timeout: 5_000 }),
+  });
+
   const startedAt = performance.now();
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      signal: AbortSignal.timeout(requestTimeoutMs),
-      body: JSON.stringify({
-        id: `${runRegion}:${provider}:${Date.now()}`,
-        jsonrpc: "2.0",
-        method: "eth_call",
-        params: [
-          {
-            to: UNIVERSAL_RESOLVER_ADDRESS,
-            data: BENCHMARK_CALLDATA,
-          },
-          "latest",
-        ],
-      }),
-    });
+    const address = await client.getEnsAddress({ name: BENCHMARK_NAME });
 
     const elapsed = Math.max(1, Math.round(performance.now() - startedAt));
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    if (!address) {
+      throw new Error("ENS lookup resolved to no address");
     }
-
-    const payload = (await response.json()) as JsonRpcSuccess | JsonRpcFailure;
-
-    if ("error" in payload) {
-      throw new Error(payload.error.message || `RPC error ${payload.error.code}`);
-    }
-
-    decodeResolvedAddress(payload.result);
 
     return {
       region: runRegion,
@@ -148,15 +109,6 @@ function requireEnv(key: string): string {
   }
 
   return value;
-}
-
-function parsePositiveInt(value: string | undefined, fallbackValue: number): number {
-  if (!value) {
-    return fallbackValue;
-  }
-
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackValue;
 }
 
 function formatError(error: unknown): string {

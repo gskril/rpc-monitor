@@ -175,7 +175,6 @@ Required for workers:
 
 Optional worker settings:
 
-- `REQUEST_TIMEOUT_MS`
 - `ALCHEMY_API_KEY`
 - `INFURA_API_KEY`
 - `QUICKNODE_ENDPOINT`
