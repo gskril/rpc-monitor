@@ -36,6 +36,7 @@ type RegionLatencyRow = {
   averageLatencyMs: number | null;
   failedCount: number;
   latestAt: string | null;
+  p95Ms: number | null;
   region: string;
   sampleCount: number;
   successRate: number | null;
@@ -196,10 +197,6 @@ export default function App() {
     });
   }, [providers, selectedProvider]);
 
-  const selectedOverview = overviewRows.find(
-    (row) => row.region === selectedRegion && row.provider === selectedProvider,
-  );
-
   const chartProviders = useMemo(
     () => uniqueValues(timeseriesRows.map((row) => row.provider)),
     [timeseriesRows],
@@ -249,12 +246,17 @@ export default function App() {
               }, "" as string)
             : null;
 
+        const sortedMs = successfulRows.map((row) => row.responseMs).sort((a, b) => a - b);
+        const p95Index = Math.ceil(sortedMs.length * 0.95) - 1;
+        const p95Ms = sortedMs.length > 0 ? sortedMs[Math.max(0, p95Index)]! : null;
+
         return {
           averageLatencyMs: successfulRows.length
             ? Math.round(totalLatency / successfulRows.length)
             : null,
           failedCount: rows.length - successfulRows.length,
           latestAt,
+          p95Ms: p95Ms !== null ? Math.round(p95Ms) : null,
           region,
           sampleCount: rows.length,
           successRate: rows.length ? (successfulRows.length / rows.length) * 100 : null,
@@ -279,10 +281,6 @@ export default function App() {
           <div className="header-metric">
             <span>Regions</span>
             <strong>{regions.length}</strong>
-          </div>
-          <div className="header-metric">
-            <span>p95</span>
-            <strong>{selectedOverview?.p95Ms ? `${selectedOverview.p95Ms}ms` : "--"}</strong>
           </div>
         </div>
       </header>
@@ -381,6 +379,7 @@ export default function App() {
               <tr>
                 <th>Region</th>
                 <th>Avg latency</th>
+                <th>p95</th>
                 <th>Success rate</th>
                 <th>Samples</th>
                 <th>Failures</th>
@@ -395,6 +394,7 @@ export default function App() {
                 >
                   <td>{row.region}</td>
                   <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "--"}</td>
+                  <td>{row.p95Ms !== null ? `${row.p95Ms} ms` : "--"}</td>
                   <td>
                     {row.successRate !== null ? (
                       <span className={rateClass(row.successRate)}>
