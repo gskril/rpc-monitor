@@ -46,20 +46,16 @@ try {
   await destroyDatabase(db);
 }
 
+const TIMEOUT_MS = 5_000;
+
 async function benchmarkProvider(
   runRegion: string,
   provider: string,
   url: string,
 ): Promise<ProviderBenchmark> {
-  const abortController = new AbortController();
-  const overallTimeout = setTimeout(() => abortController.abort(), 5_000);
-
   const client = createPublicClient({
     chain: mainnet,
-    transport: http(url, {
-      timeout: 5_000,
-      fetchOptions: { signal: abortController.signal },
-    }),
+    transport: http(url, { timeout: TIMEOUT_MS }),
   });
 
   const startedAt = performance.now();
@@ -71,6 +67,16 @@ async function benchmarkProvider(
 
     if (!address) {
       throw new Error("ENS lookup resolved to no address");
+    }
+
+    if (elapsed > TIMEOUT_MS) {
+      return {
+        region: runRegion,
+        provider,
+        responseMs: elapsed,
+        success: false,
+        error: `Response exceeded ${TIMEOUT_MS}ms timeout (${elapsed}ms)`,
+      };
     }
 
     return {
@@ -86,12 +92,8 @@ async function benchmarkProvider(
       provider,
       responseMs: Math.max(1, Math.round(performance.now() - startedAt)),
       success: false,
-      error: abortController.signal.aborted
-        ? "Request timed out (exceeded 5000ms)"
-        : formatError(error),
+      error: formatError(error),
     };
-  } finally {
-    clearTimeout(overallTimeout);
   }
 }
 
