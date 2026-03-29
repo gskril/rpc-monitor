@@ -12,7 +12,6 @@ import { fetchLatest, fetchTimeseries } from "./lib/api";
 import type { LatestStat, TimeSeriesPoint } from "./types";
 
 const OVERVIEW_WINDOW_HOURS = 1;
-const AVAILABILITY_WINDOW_HOURS = 24;
 const DEFAULT_TIMESERIES_HOURS = 6;
 
 const absoluteDateTime = new Intl.DateTimeFormat(undefined, {
@@ -33,18 +32,29 @@ type ChartDatum = {
   tickLabel: string;
 } & Record<string, number | string | string[] | null>;
 
+type RegionLatencyRow = {
+  averageLatencyMs: number | null;
+  failedCount: number;
+  latestAt: string | null;
+  region: string;
+  sampleCount: number;
+  successRate: number | null;
+};
+
 export default function App() {
   const [overviewRows, setOverviewRows] = useState<LatestStat[]>([]);
-  const [availabilityRows, setAvailabilityRows] = useState<LatestStat[]>([]);
   const [timeseriesRows, setTimeseriesRows] = useState<TimeSeriesPoint[]>([]);
+  const [providerRows, setProviderRows] = useState<TimeSeriesPoint[]>([]);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
   const [timeseriesHours, setTimeseriesHours] = useState(DEFAULT_TIMESERIES_HOURS);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [timeseriesLoading, setTimeseriesLoading] = useState(false);
+  const [providerRowsLoading, setProviderRowsLoading] = useState(false);
 
   const deferredRegion = useDeferredValue(selectedRegion);
+  const deferredProvider = useDeferredValue(selectedProvider);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,17 +64,13 @@ export default function App() {
       setDashboardError(null);
 
       try {
-        const [overview, availability] = await Promise.all([
-          fetchLatest(OVERVIEW_WINDOW_HOURS),
-          fetchLatest(AVAILABILITY_WINDOW_HOURS),
-        ]);
+        const overview = await fetchLatest(OVERVIEW_WINDOW_HOURS);
 
         if (cancelled) {
           return;
         }
 
         setOverviewRows(overview.rows);
-        setAvailabilityRows(availability.rows);
 
         if (overview.rows.length > 0) {
           const firstRow = overview.rows[0];
@@ -134,36 +140,69 @@ export default function App() {
     };
   }, [deferredRegion, timeseriesHours]);
 
-  const regions = useMemo(
-    () => uniqueValues(overviewRows.map((row) => row.region)),
+  useEffect(() => {
+    if (!deferredProvider) {
+      setProviderRows([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProviderRows() {
+      setProviderRowsLoading(true);
+      setDashboardError(null);
+
+      try {
+        const response = await fetchTimeseries({
+          hours: timeseriesHours,
+          provider: deferredProvider,
+        });
+
+        if (!cancelled) {
+          setProviderRows(response.rows);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDashboardError(formatError(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setProviderRowsLoading(false);
+        }
+      }
+    }
+
+    void loadProviderRows();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deferredProvider, timeseriesHours]);
+
+  const regions = useMemo(() => uniqueValues(overviewRows.map((row) => row.region)), [overviewRows]);
+
+  const providers = useMemo(
+    () => uniqueValues(overviewRows.map((row) => row.provider)),
     [overviewRows],
   );
 
-  const providers = useMemo(() => {
-    const scoped = selectedRegion
-      ? overviewRows.filter((row) => row.region === selectedRegion)
-      : overviewRows;
-
-    return uniqueValues(scoped.map((row) => row.provider));
-  }, [overviewRows, selectedRegion]);
-
   useEffect(() => {
-    if (!selectedRegion || providers.includes(selectedProvider)) {
+    if (providers.includes(selectedProvider)) {
       return;
     }
 
     startTransition(() => {
       setSelectedProvider(providers[0] ?? "");
     });
-  }, [providers, selectedProvider, selectedRegion]);
+  }, [providers, selectedProvider]);
 
   const selectedOverview = overviewRows.find(
     (row) => row.region === selectedRegion && row.provider === selectedProvider,
   );
 
   const chartProviders = useMemo(
-    () => providers.filter((provider) => timeseriesRows.some((row) => row.provider === provider)),
-    [providers, timeseriesRows],
+    () => uniqueValues(timeseriesRows.map((row) => row.provider)),
+    [timeseriesRows],
   );
 
   const chartData = useMemo<ChartDatum[]>(() => {
@@ -192,6 +231,37 @@ export default function App() {
       (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
     );
   }, [timeseriesRows]);
+
+  const regionLatencyRows = useMemo<RegionLatencyRow[]>(
+    () =>
+      regions.map((region) => {
+        const rows = providerRows.filter((row) => row.region === region);
+        const successfulRows = rows.filter((row) => row.success);
+        const totalLatency = successfulRows.reduce((sum, row) => sum + row.responseMs, 0);
+        const latestAt =
+          rows.length > 0
+            ? rows.reduce((latest, row) => {
+                if (!latest) {
+                  return row.createdAt;
+                }
+
+                return Date.parse(row.createdAt) > Date.parse(latest) ? row.createdAt : latest;
+              }, "" as string)
+            : null;
+
+        return {
+          averageLatencyMs: successfulRows.length
+            ? Math.round(totalLatency / successfulRows.length)
+            : null,
+          failedCount: rows.length - successfulRows.length,
+          latestAt,
+          region,
+          sampleCount: rows.length,
+          successRate: rows.length ? (successfulRows.length / rows.length) * 100 : null,
+        };
+      }),
+    [providerRows, regions],
+  );
 
   return (
     <main className="page-shell">
@@ -226,7 +296,7 @@ export default function App() {
       <section className="panel controls-panel">
         <div className="controls-header">
           <h2>Time series filters</h2>
-          <p>Compare every provider in one Railway region and use the provider filter to highlight a line.</p>
+          <p>Compare every provider in one Railway region and inspect regional averages for one selected provider.</p>
         </div>
         <div className="controls-grid">
           <label>
@@ -249,7 +319,7 @@ export default function App() {
           </label>
 
           <label>
-            <span>Highlight provider</span>
+            <span>Provider</span>
             <select
               value={selectedProvider}
               onChange={(event) => {
@@ -315,78 +385,48 @@ export default function App() {
         </div>
       </section>
 
-      <section className="grid-two">
-        <div className="panel table-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Latest latency snapshot</h2>
-              <p>p50 and p95 for the last hour, grouped by region and provider.</p>
-            </div>
-            <span className="status-chip">1h window</span>
+      <section className="panel table-panel">
+        <div className="panel-header">
+          <div>
+            <h2>Average latency by region</h2>
+            <p>
+              Successful-call average for {selectedProvider || "the selected provider"} across every
+              Railway region in the last {timeseriesHours} hours.
+            </p>
           </div>
-
-          <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Region</th>
-                  <th>Provider</th>
-                  <th>p50</th>
-                  <th>p95</th>
-                  <th>Success</th>
-                  <th>Samples</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overviewRows.map((row) => {
-                  const selected =
-                    row.region === selectedRegion && row.provider === selectedProvider;
-
-                  return (
-                    <tr
-                      key={`${row.region}:${row.provider}`}
-                      className={selected ? "selected-row" : undefined}
-                    >
-                      <td>{row.region}</td>
-                      <td>{row.provider}</td>
-                      <td>{row.p50Ms ? `${row.p50Ms} ms` : "n/a"}</td>
-                      <td>{row.p95Ms ? `${row.p95Ms} ms` : "n/a"}</td>
-                      <td>{row.successRate.toFixed(2)}%</td>
-                      <td>{row.sampleCount}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <span className="status-chip">
+            {providerRowsLoading ? "Refreshing…" : `${timeseriesHours}h window`}
+          </span>
         </div>
 
-        <div className="panel availability-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Availability by provider</h2>
-              <p>Success rate for the last 24 hours.</p>
-            </div>
-            <span className="status-chip">24h window</span>
-          </div>
-
-          <div className="availability-grid">
-            {availabilityRows.map((row) => (
-              <article key={`${row.region}:${row.provider}`} className="availability-card">
-                <div className="availability-topline">
-                  <strong>{row.provider}</strong>
-                  <span>{row.region}</span>
-                </div>
-                <p className="availability-rate">{row.successRate.toFixed(2)}%</p>
-                <p className="availability-meta">
-                  {row.successCount}/{row.sampleCount} successful calls
-                </p>
-                <p className="availability-meta">
-                  Last sample {absoluteDateTime.format(new Date(row.latestAt))}
-                </p>
-              </article>
-            ))}
-          </div>
+        <div className="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Region</th>
+                <th>Average latency</th>
+                <th>Success rate</th>
+                <th>Samples</th>
+                <th>Failures</th>
+                <th>Last sample</th>
+              </tr>
+            </thead>
+            <tbody>
+              {regionLatencyRows.map((row) => (
+                <tr
+                  key={row.region}
+                  className={row.region === selectedRegion ? "selected-row" : undefined}
+                >
+                  <td>{row.region}</td>
+                  <td>{row.averageLatencyMs !== null ? `${row.averageLatencyMs} ms` : "n/a"}</td>
+                  <td>{row.successRate !== null ? `${row.successRate.toFixed(2)}%` : "n/a"}</td>
+                  <td>{row.sampleCount}</td>
+                  <td>{row.failedCount}</td>
+                  <td>{row.latestAt ? absoluteDateTime.format(new Date(row.latestAt)) : "n/a"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </main>

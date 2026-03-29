@@ -9,15 +9,18 @@ export async function fetchLatest(hours: number): Promise<LatestStatsResponse> {
 export async function fetchTimeseries(params: {
   hours: number;
   provider?: string;
-  region: string;
+  region?: string;
 }): Promise<TimeSeriesResponse> {
   const searchParams = new URLSearchParams({
     hours: String(params.hours),
-    region: params.region,
   });
 
   if (params.provider) {
     searchParams.set("provider", params.provider);
+  }
+
+  if (params.region) {
+    searchParams.set("region", params.region);
   }
 
   return request<TimeSeriesResponse>(`/api/timeseries?${searchParams.toString()}`);

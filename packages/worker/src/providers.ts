@@ -55,7 +55,20 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     });
   }
 
-  providers.push({ name: "ankr", url: ankr(MAINNET) });
+  const ankrKey = readEnv(env, "ANKR_API_KEY");
+  providers.push({
+    name: "ankr",
+    url: ankrKey ? `https://rpc.ankr.com/eth/${ankrKey}` : ankr(MAINNET),
+  });
+
+  const goldskyKey = readEnv(env, "GOLDSKY_API_KEY");
+  if (goldskyKey) {
+    providers.push({
+      name: "goldsky",
+      url: `https://edge.goldsky.com/standard/evm/1?secret=${goldskyKey}`,
+    });
+  }
+
   providers.push({ name: "publicnode", url: publicNode(MAINNET) });
 
   const drpcUrl = normalizeUrl(readEnv(env, "DRPC_URL"));

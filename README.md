@@ -37,7 +37,8 @@ Notes:
 - `alchemy`, `infura`, and `chainstack` use API-key style env vars.
 - `quicknode` supports either `QUICKNODE_ENDPOINT` or `QUICKNODE_APP_NAME` + `QUICKNODE_API_KEY`.
 - `drpc` works as a public endpoint by default and can use `DRPC_API_KEY` if provided.
-- `ankr` and `publicnode` are included by default as public endpoints.
+- `ankr` supports `ANKR_API_KEY` and falls back to its public endpoint when unset.
+- `publicnode` is included by default as a public endpoint.
 
 ## Local setup
 
@@ -182,7 +183,9 @@ Optional worker settings:
 - `QUICKNODE_API_KEY`
 - `CHAINSTACK_ENDPOINT`
 - `CHAINSTACK_API_KEY`
+- `ANKR_API_KEY`
 - `DRPC_API_KEY`
+- `GOLDSKY_API_KEY`
 
 Required for dashboard:
 
