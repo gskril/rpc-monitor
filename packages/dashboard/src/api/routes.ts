@@ -16,7 +16,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     return json({
       hours,
       rows,
-    });
+    }, 200, 30);
   }
 
   if (url.pathname === "/api/timeseries") {
@@ -30,7 +30,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       provider: provider ?? null,
       region: region ?? null,
       rows,
-    });
+    }, 200, 30);
   }
 
   if (url.pathname.startsWith("/api/")) {
@@ -44,11 +44,11 @@ export async function shutdownApi() {
   await closeSqlClient();
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, maxAge = 0): Response {
   return Response.json(data, {
     status,
     headers: {
-      "cache-control": "no-store",
+      "cache-control": maxAge > 0 ? `public, max-age=${maxAge}` : "no-store",
     },
   });
 }
