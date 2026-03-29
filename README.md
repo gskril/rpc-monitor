@@ -58,7 +58,7 @@ cp .env.example .env
 4. Run the worker once:
 
 ```sh
-bun --cwd packages/worker run start
+bun run worker
 ```
 
 5. Run migrations manually if you want to prime the database before starting services:
@@ -70,13 +70,13 @@ bun run db:migrate
 6. Start the dashboard API:
 
 ```sh
-bun --cwd packages/dashboard run dev:server
+bun run --cwd packages/dashboard dev:server
 ```
 
 7. Start the dashboard frontend:
 
 ```sh
-bun --cwd packages/dashboard run dev
+bun run --cwd packages/dashboard dev
 ```
 
 The Vite dev server runs on `http://localhost:5173` and proxies `/api` to the Bun API on `http://localhost:3001`.
@@ -86,14 +86,14 @@ The Vite dev server runs on `http://localhost:5173` and proxies `/api` to the Bu
 Worker:
 
 ```sh
-bun --cwd packages/worker run build
+bun run --cwd packages/worker build
 ```
 
 Dashboard:
 
 ```sh
-bun --cwd packages/dashboard run build
-bun --cwd packages/dashboard run start
+bun run build:dashboard
+bun run dashboard:server
 ```
 
 Shared DB migrations:

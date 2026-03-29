@@ -71,7 +71,7 @@ async function serveClient(request: Request): Promise<Response> {
   }
 
   return new Response(
-    "Client build not found. Run `bun --cwd packages/dashboard run build` for production or `bun --cwd packages/dashboard run dev` for local Vite development.",
+    "Client build not found. Run `bun run build:dashboard` for production or `bun run --cwd packages/dashboard dev` for local Vite development.",
     { status: 503 },
   );
 }

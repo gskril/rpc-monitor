@@ -1,6 +1,6 @@
 [build]
 builder = "RAILPACK"
-buildCommand = "bun install && bun --cwd packages/dashboard run build"
+buildCommand = "bun install && bun run build:dashboard"
 watchPatterns = [
   "/railway/dashboard.toml",
   "/packages/dashboard/**",
@@ -11,7 +11,7 @@ watchPatterns = [
 ]
 
 [deploy]
-startCommand = "bun --cwd packages/dashboard run start"
+startCommand = "bun run dashboard:server"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

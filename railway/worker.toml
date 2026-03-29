@@ -11,6 +11,6 @@ watchPatterns = [
 ]
 
 [deploy]
-startCommand = "bun --cwd packages/worker run start"
+startCommand = "bun run worker"
 restartPolicyType = "NEVER"
 cronSchedule = "*/5 * * * *"
