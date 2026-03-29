@@ -221,7 +221,12 @@ export default function App() {
       }
     >();
 
-    for (const row of regionalStats) {
+    const filtered =
+      selectedRegion === ALL_REGIONS
+        ? regionalStats
+        : regionalStats.filter((r) => r.region === selectedRegion);
+
+    for (const row of filtered) {
       const existing = byProvider.get(row.provider);
       if (existing) {
         if (row.avgMs !== null) {
@@ -248,7 +253,7 @@ export default function App() {
         successRate: stats.successTotal / stats.rateCount,
       }))
       .sort((a, b) => a.avgMs - b.avgMs);
-  }, [regionalStats]);
+  }, [regionalStats, selectedRegion]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {
     const providerRows = regionalStats
@@ -485,10 +490,17 @@ export default function App() {
         <div className="card">
           <div className="section-header">
             <div>
-              <h2 className="section-title">Global provider ranking</h2>
+              <h2 className="section-title">
+                {selectedRegion === ALL_REGIONS
+                  ? "Global provider ranking"
+                  : "Provider ranking"}
+              </h2>
               <p className="section-subtitle">
-                Average latency across all regions &middot; {timeseriesHours}h
-                window
+                Average latency
+                {selectedRegion === ALL_REGIONS
+                  ? " across all regions"
+                  : ` in ${selectedRegion}`}{" "}
+                &middot; {timeseriesHours}h window
               </p>
             </div>
             <span className="chip">
