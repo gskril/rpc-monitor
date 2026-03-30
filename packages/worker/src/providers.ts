@@ -54,6 +54,20 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     });
   }
 
+  const googleKey = readEnv(env, "GOOGLE_API_KEY");
+  const googleProject = readEnv(env, "GOOGLE_PROJECT");
+  if (googleKey && googleProject) {
+    providers.push({
+      name: "google-us-central",
+      url: `https://blockchain.googleapis.com/v1/projects/gregskril/locations/us-central1/endpoints/ethereum-mainnet/rpc?key=${googleKey}`,
+    });
+
+    providers.push({
+      name: "google-asia-east",
+      url: `https://blockchain.googleapis.com/v1/projects/gregskril/locations/asia-east1/endpoints/ethereum-mainnet/rpc?key=${googleKey}`,
+    });
+  }
+
   const gregsUrl = readEnv(env, "GREG_URL");
   if (gregsUrl) {
     providers.push({
