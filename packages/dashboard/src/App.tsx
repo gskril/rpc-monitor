@@ -299,10 +299,11 @@ export default function App() {
       <header className="header">
         <div className="header-left">
           <span className="header-tag">RPC Monitor</span>
-          <h1>RPC Provider Benchmarks</h1>
+          <h1>Ethereum RPC Provider Benchmarks</h1>
           <p className="header-note">
-            All checks use the same <code>eth_call</code> to the ENS Universal
-            Resolver
+            All providers are on the free or PAYG tier — no premium monthly
+            plans. All checks use the same <code>eth_call</code> to the ENS
+            Universal Resolver.
           </p>
         </div>
         <div className="header-metrics">
