@@ -110,7 +110,7 @@ export default function LatencyChart(props: {
           iconType="plainline"
           wrapperStyle={{
             fontSize: "0.8rem",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'DM Sans Variable', sans-serif",
             paddingTop: 8,
           }}
         />

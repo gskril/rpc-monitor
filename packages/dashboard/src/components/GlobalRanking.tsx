@@ -47,7 +47,7 @@ export default function GlobalRanking(props: { rows: RankedProvider[] }) {
             tick={{
               fill: "#e8edf2",
               fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'DM Sans Variable', sans-serif",
             }}
           />
           <Bar dataKey="avgMs" radius={[0, 4, 4, 0]} isAnimationActive={false}>
