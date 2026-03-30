@@ -57,7 +57,7 @@ async function benchmarkProvider(
 ): Promise<ProviderBenchmark> {
   const client = createPublicClient({
     chain: mainnet,
-    transport: http(url, { timeout: 5_000 }),
+    transport: http(url),
   });
 
   const startedAt = performance.now();
