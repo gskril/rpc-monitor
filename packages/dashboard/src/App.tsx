@@ -2,12 +2,11 @@ import {
   Suspense,
   lazy,
   startTransition,
-  useDeferredValue,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { fetchLatest, fetchTimeseries } from "./lib/api";
 
@@ -46,45 +45,42 @@ type RegionLatencyRow = {
 };
 
 export default function App() {
-  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState(ALL_REGIONS);
   const [selectedProvider, setSelectedProvider] = useState("");
   const [timeseriesHours, setTimeseriesHours] = useState(
     DEFAULT_TIMESERIES_HOURS,
   );
 
-  const deferredRegion = useDeferredValue(selectedRegion);
-  const deferredProvider = useDeferredValue(selectedProvider);
-
   const regionalStatsQuery = useQuery({
     queryKey: ["latest", timeseriesHours],
     queryFn: () => fetchLatest(timeseriesHours),
+    placeholderData: keepPreviousData,
   });
 
   const regionalStats = regionalStatsQuery.data?.rows ?? [];
 
-  // Seed the default selections from the same window used elsewhere in the dashboard.
+  // Seed the default provider selection once data arrives.
   useEffect(() => {
-    if (regionalStats.length > 0 && !selectedRegion) {
+    if (regionalStats.length > 0 && !selectedProvider) {
       const firstRow = regionalStats[0];
       if (!firstRow) return;
-
       startTransition(() => {
-        setSelectedRegion((current) => current || ALL_REGIONS);
         setSelectedProvider((current) => current || firstRow.provider);
       });
     }
-  }, [regionalStats, selectedRegion]);
+  }, [regionalStats, selectedProvider]);
 
   const timeseriesQuery = useQuery({
-    queryKey: ["timeseries", deferredRegion, timeseriesHours],
+    queryKey: ["timeseries", selectedRegion, timeseriesHours],
     queryFn: () => {
       const params =
-        deferredRegion === ALL_REGIONS
+        selectedRegion === ALL_REGIONS
           ? { hours: timeseriesHours }
-          : { hours: timeseriesHours, region: deferredRegion };
+          : { hours: timeseriesHours, region: selectedRegion };
       return fetchTimeseries(params);
     },
-    enabled: !!deferredRegion,
+    enabled: !!selectedRegion,
+    placeholderData: keepPreviousData,
   });
 
   const timeseriesRows = timeseriesQuery.data?.rows ?? [];
@@ -99,16 +95,6 @@ export default function App() {
     () => uniqueValues(regionalStats.map((row) => row.provider)),
     [regionalStats],
   );
-
-  useEffect(() => {
-    if (providers.includes(selectedProvider)) {
-      return;
-    }
-
-    startTransition(() => {
-      setSelectedProvider(providers[0] ?? "");
-    });
-  }, [providers, selectedProvider]);
 
   const chartProviders = useMemo(
     () => uniqueValues(timeseriesRows.map((row) => row.provider)),
@@ -257,7 +243,7 @@ export default function App() {
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {
     const providerRows = regionalStats
-      .filter((row) => row.provider === deferredProvider)
+      .filter((row) => row.provider === selectedProvider)
       .map((row) => ({
         averageLatencyMs: row.avgMs,
         failedCount: row.sampleCount - row.successCount,
@@ -292,7 +278,7 @@ export default function App() {
     };
 
     return [aggregateRow, ...providerRows];
-  }, [regionalStats, deferredProvider]);
+  }, [regionalStats, selectedProvider]);
 
   return (
     <main className="page-shell">
@@ -321,10 +307,6 @@ export default function App() {
       {dashboardError ? (
         <p className="banner error">{dashboardError.message}</p>
       ) : null}
-      {regionalStatsQuery.isLoading ? (
-        <p className="banner">Loading benchmark data...</p>
-      ) : null}
-
       <div className="card">
         <div className="toolbar">
           <div className="toolbar-group">
@@ -395,9 +377,11 @@ export default function App() {
             </p>
           </div>
           <span className="chip">
-            {timeseriesQuery.isFetching
-              ? "Refreshing..."
-              : selectedProvider || "All"}
+            {timeseriesQuery.isLoading
+              ? "Loading..."
+              : timeseriesQuery.isFetching
+                ? "Refreshing..."
+                : selectedProvider || "All"}
           </span>
         </div>
 
@@ -423,11 +407,9 @@ export default function App() {
               {timeseriesHours}h window
             </p>
           </div>
-          <span className="chip">
-            {regionalStatsQuery.isFetching
-              ? "Refreshing..."
-              : `${regionLatencyRows.length} regions`}
-          </span>
+          {regionalStatsQuery.isFetching && (
+            <span className="chip">Refreshing...</span>
+          )}
         </div>
 
         <div className="table-shell">
@@ -504,11 +486,9 @@ export default function App() {
                 &middot; {timeseriesHours}h window
               </p>
             </div>
-            <span className="chip">
-              {regionalStatsQuery.isFetching
-                ? "Refreshing..."
-                : `${globalRanking.length} providers`}
-            </span>
+            {regionalStatsQuery.isFetching && (
+              <span className="chip">Refreshing...</span>
+            )}
           </div>
           <Suspense fallback={null}>
             <GlobalRanking rows={globalRanking} />
