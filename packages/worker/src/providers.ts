@@ -72,6 +72,14 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     url: drpc(MAINNET, drpcKey),
   });
 
+  const gregsUrl = readEnv(env, "GREG_URL");
+  if (gregsUrl) {
+    providers.push({
+      name: "greg",
+      url: gregsUrl,
+    });
+  }
+
   return dedupeByName(providers);
 }
 
