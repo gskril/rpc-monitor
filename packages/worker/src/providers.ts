@@ -6,6 +6,7 @@ import {
   infura,
   publicNode,
   quicknode,
+  tenderly,
 } from "evm-providers";
 
 export type ProviderConfig = {
@@ -23,6 +24,51 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     providers.push({ name: "alchemy", url: alchemy(MAINNET, alchemyKey) });
   }
 
+  const ankrKey = readEnv(env, "ANKR_API_KEY");
+  if (ankrKey) {
+    providers.push({
+      name: "ankr",
+      url: ankr(MAINNET, ankrKey),
+    });
+  }
+
+  const chainstackKey = readEnv(env, "CHAINSTACK_API_KEY");
+  if (chainstackKey) {
+    providers.push({
+      name: "chainstack",
+      url: chainstack(MAINNET, chainstackKey),
+    });
+  }
+
+  const drpcKey = readEnv(env, "DRPC_API_KEY");
+  providers.push({
+    name: "drpc",
+    url: drpc(MAINNET, drpcKey),
+  });
+
+  const goldskyKey = readEnv(env, "GOLDSKY_API_KEY");
+  if (goldskyKey) {
+    providers.push({
+      name: "goldsky",
+      url: `https://edge.goldsky.com/standard/evm/1?secret=${goldskyKey}`,
+    });
+  }
+
+  const gregsUrl = readEnv(env, "GREG_URL");
+  if (gregsUrl) {
+    providers.push({
+      name: "greg",
+      url: gregsUrl,
+    });
+  }
+
+  const infuraKey = readEnv(env, "INFURA_API_KEY");
+  if (infuraKey) {
+    providers.push({ name: "infura", url: infura(MAINNET, infuraKey) });
+  }
+
+  providers.push({ name: "publicnode", url: publicNode(MAINNET) });
+
   const quicknodeUrl = readEnv(env, "QUICKNODE_URL");
   const quicknodeAppName = readEnv(env, "QUICKNODE_APP_NAME");
   const quicknodeApiKey = readEnv(env, "QUICKNODE_API_KEY");
@@ -35,48 +81,11 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     });
   }
 
-  const infuraKey = readEnv(env, "INFURA_API_KEY");
-  if (infuraKey) {
-    providers.push({ name: "infura", url: infura(MAINNET, infuraKey) });
-  }
-
-  const chainstackKey = readEnv(env, "CHAINSTACK_API_KEY");
-  if (chainstackKey) {
+  const tenderlyKey = readEnv(env, "TENDERLY_API_KEY");
+  if (tenderlyKey) {
     providers.push({
-      name: "chainstack",
-      url: chainstack(MAINNET, chainstackKey),
-    });
-  }
-
-  const ankrKey = readEnv(env, "ANKR_API_KEY");
-  if (ankrKey) {
-    providers.push({
-      name: "ankr",
-      url: ankr(MAINNET, ankrKey),
-    });
-  }
-
-  const goldskyKey = readEnv(env, "GOLDSKY_API_KEY");
-  if (goldskyKey) {
-    providers.push({
-      name: "goldsky",
-      url: `https://edge.goldsky.com/standard/evm/1?secret=${goldskyKey}`,
-    });
-  }
-
-  providers.push({ name: "publicnode", url: publicNode(MAINNET) });
-
-  const drpcKey = readEnv(env, "DRPC_API_KEY");
-  providers.push({
-    name: "drpc",
-    url: drpc(MAINNET, drpcKey),
-  });
-
-  const gregsUrl = readEnv(env, "GREG_URL");
-  if (gregsUrl) {
-    providers.push({
-      name: "greg",
-      url: gregsUrl,
+      name: "tenderly",
+      url: tenderly(MAINNET, tenderlyKey),
     });
   }
 
