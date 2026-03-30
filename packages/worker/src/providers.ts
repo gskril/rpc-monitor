@@ -80,6 +80,11 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     providers.push({ name: "infura", url: infura(MAINNET, infuraKey) });
   }
 
+  providers.push({
+    name: "pocket",
+    url: "https://eth.api.pocket.network",
+  });
+
   providers.push({ name: "publicnode", url: publicNode(MAINNET) });
 
   const quicknodeUrl = readEnv(env, "QUICKNODE_URL");
