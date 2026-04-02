@@ -67,14 +67,6 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
     });
   }
 
-  const gregsUrl = readEnv(env, "GREG_URL");
-  if (gregsUrl) {
-    providers.push({
-      name: "greg",
-      url: gregsUrl,
-    });
-  }
-
   const infuraKey = readEnv(env, "INFURA_API_KEY");
   if (infuraKey) {
     providers.push({ name: "infura", url: infura(MAINNET, infuraKey) });
