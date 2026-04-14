@@ -155,11 +155,7 @@ export default function App() {
       selectedProvider: selectedRegionalProvider,
       selectedRegion,
     });
-  }, [
-    globalStats,
-    selectedRegionalProvider,
-    selectedRegion,
-  ]);
+  }, [globalStats, selectedRegionalProvider, selectedRegion]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {
     return buildRegionLatencyRows({
@@ -237,7 +233,7 @@ export default function App() {
                 );
               }}
             >
-              {[1, 3, 6, 12, 24, 72].map((hours) => (
+              {[1, 3, 6, 12, 24].map((hours) => (
                 <option key={hours} value={hours}>
                   Last {hours}h
                 </option>

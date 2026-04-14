@@ -203,7 +203,10 @@ function getDatabase() {
   return databasePromise;
 }
 
-function mapLatestRow(row: LatestStatsRow, regionOverride?: string): LatestStat {
+function mapLatestRow(
+  row: LatestStatsRow,
+  regionOverride?: string,
+): LatestStat {
   return {
     avgMs: row.avg_ms,
     latestAt: row.latest_at.toISOString(),
