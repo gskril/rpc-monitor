@@ -8,6 +8,12 @@ import {
   YAxis,
 } from "recharts";
 
+import {
+  getRankingValue,
+  type RankedProvider,
+  type RankingMetric,
+} from "../lib/dashboardMetrics";
+
 const palette = [
   "#5eead4",
   "#7dd3fc",
@@ -18,14 +24,10 @@ const palette = [
   "#fb923c",
 ];
 
-type RankedProvider = {
-  provider: string;
-  avgMs: number;
-  successRate: number;
-};
-
-function BarLabel(props: LabelProps & { rows: RankedProvider[] }) {
-  const { x, y, width, height, index, rows } = props;
+function BarLabel(
+  props: LabelProps & { metric: RankingMetric; rows: RankedProvider[] },
+) {
+  const { x, y, width, height, index, metric, rows } = props;
   if (
     x == null ||
     y == null ||
@@ -36,6 +38,8 @@ function BarLabel(props: LabelProps & { rows: RankedProvider[] }) {
     return null;
   const row = rows[index as number];
   if (!row) return null;
+  const value = getRankingValue(row, metric);
+  if (value === null) return null;
 
   const rateColor =
     row.successRate >= 99
@@ -52,7 +56,7 @@ function BarLabel(props: LabelProps & { rows: RankedProvider[] }) {
       fontFamily="'DM Mono Variable', monospace"
     >
       <tspan fill="#e8edf2" fontSize={13} fontWeight={500}>
-        {row.avgMs} ms
+        {value} ms
       </tspan>
       <tspan fill={rateColor} fontSize={11} dx={8} className="medium-hide">
         {row.successRate.toFixed(1)}%
@@ -61,10 +65,16 @@ function BarLabel(props: LabelProps & { rows: RankedProvider[] }) {
   );
 }
 
-export default function GlobalRanking(props: { rows: RankedProvider[] }) {
+export default function GlobalRanking(props: {
+  metric: RankingMetric;
+  rows: RankedProvider[];
+}) {
   if (!props.rows.length) return null;
 
-  const maxMs = Math.max(...props.rows.map((r) => r.avgMs));
+  const maxMs = Math.max(
+    ...props.rows.map((row) => getRankingValue(row, props.metric) ?? 0),
+  );
+  const dataKey = props.metric === "avg" ? "avgMs" : "p95Ms";
 
   return (
     <div className="ranking-chart">
@@ -89,10 +99,10 @@ export default function GlobalRanking(props: { rows: RankedProvider[] }) {
             }}
           />
           <Bar
-            dataKey="avgMs"
+            dataKey={dataKey}
             radius={[0, 4, 4, 0]}
             isAnimationActive={false}
-            label={<BarLabel rows={props.rows} />}
+            label={<BarLabel metric={props.metric} rows={props.rows} />}
           >
             {props.rows.map((entry, index) => (
               <Cell

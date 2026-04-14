@@ -9,6 +9,17 @@ import {
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { fetchLatest, fetchTimeseries } from "./lib/api";
+import {
+  buildAggregateProviderRow,
+  buildChartData,
+  buildRankedProviders,
+  buildRegionLatencyRows,
+  getRankingValue,
+  type RankedProvider,
+  type RankingMetric,
+  type RegionLatencyRow,
+  uniqueValues,
+} from "./lib/dashboardMetrics";
 
 const DEFAULT_TIMESERIES_HOURS = 6;
 const ALL_REGIONS = "all";
@@ -26,27 +37,10 @@ const compactTime = new Intl.DateTimeFormat(undefined, {
 const LatencyChart = lazy(() => import("./components/LatencyChart"));
 const GlobalRanking = lazy(() => import("./components/GlobalRanking"));
 
-type ChartDatum = {
-  createdAt: string;
-  epoch: number;
-  failedProviders: string[];
-  tickLabel: string;
-} & Record<string, number | string | string[] | null>;
-
-type RegionLatencyRow = {
-  averageLatencyMs: number | null;
-  failedCount: number;
-  isAggregate?: boolean;
-  latestAt: string | null;
-  p95Ms: number | null;
-  region: string;
-  sampleCount: number;
-  successRate: number | null;
-};
-
 export default function App() {
   const [selectedRegion, setSelectedRegion] = useState(ALL_REGIONS);
   const [selectedProvider, setSelectedProvider] = useState("");
+  const [rankingMetric, setRankingMetric] = useState<RankingMetric>("avg");
   const [timeseriesHours, setTimeseriesHours] = useState(
     DEFAULT_TIMESERIES_HOURS,
   );
@@ -79,7 +73,6 @@ export default function App() {
           : { hours: timeseriesHours, region: selectedRegion };
       return fetchTimeseries(params);
     },
-    enabled: !!selectedRegion,
     placeholderData: keepPreviousData,
   });
 
@@ -101,184 +94,56 @@ export default function App() {
     [timeseriesRows],
   );
 
-  const chartData = useMemo<ChartDatum[]>(() => {
-    const isAll = selectedRegion === ALL_REGIONS;
+  const { allRegionSamples, chartData } = useMemo(
+    () =>
+      buildChartData({
+        rows: timeseriesRows,
+        selectedRegion,
+        tickFormatter: compactTime,
+      }),
+    [selectedRegion, timeseriesRows],
+  );
 
-    if (!isAll) {
-      const points = new Map<string, ChartDatum>();
+  const globalRanking = useMemo<RankedProvider[]>(() => {
+    return buildRankedProviders({
+      allRegionSamples,
+      rows: timeseriesRows,
+      selectedRegion,
+    });
+  }, [allRegionSamples, selectedRegion, timeseriesRows]);
 
-      for (const row of timeseriesRows) {
-        const existing = points.get(row.createdAt);
-        const point = existing ?? {
-          createdAt: row.createdAt,
-          epoch: Date.parse(row.createdAt),
-          failedProviders: [],
-          tickLabel: compactTime.format(new Date(row.createdAt)),
-        };
+  const rankedProviders = useMemo(() => {
+    return globalRanking
+      .filter((row) => getRankingValue(row, rankingMetric) !== null)
+      .sort((left, right) => {
+        return (
+          getRankingValue(left, rankingMetric)! -
+          getRankingValue(right, rankingMetric)!
+        );
+      });
+  }, [globalRanking, rankingMetric]);
 
-        point[row.provider] = row.success ? row.responseMs : null;
-
-        if (!row.success && !point.failedProviders.includes(row.provider)) {
-          point.failedProviders = [...point.failedProviders, row.provider];
-        }
-
-        points.set(row.createdAt, point);
-      }
-
-      return Array.from(points.values()).sort(
-        (left, right) =>
-          Date.parse(left.createdAt) - Date.parse(right.createdAt),
-      );
-    }
-
-    // When "all" is selected, average latency across regions per (timestamp, provider).
-    // Timestamps from different regions may differ by a few seconds, so round to the
-    // nearest minute before grouping so they collapse into a single data point.
-    const grouped = new Map<
-      string,
-      Map<string, { total: number; count: number; failed: boolean }>
-    >();
-
-    for (const row of timeseriesRows) {
-      const rounded = new Date(row.createdAt);
-      rounded.setSeconds(0, 0);
-      const key = rounded.toISOString();
-
-      let providerMap = grouped.get(key);
-      if (!providerMap) {
-        providerMap = new Map();
-        grouped.set(key, providerMap);
-      }
-
-      const existing = providerMap.get(row.provider);
-      if (row.success) {
-        if (existing) {
-          existing.total += row.responseMs;
-          existing.count += 1;
-        } else {
-          providerMap.set(row.provider, {
-            total: row.responseMs,
-            count: 1,
-            failed: false,
-          });
-        }
-      } else {
-        if (existing) {
-          existing.failed = true;
-        } else {
-          providerMap.set(row.provider, { total: 0, count: 0, failed: true });
-        }
-      }
-    }
-
-    const points: ChartDatum[] = [];
-    for (const [createdAt, providerMap] of grouped) {
-      const point: ChartDatum = {
-        createdAt,
-        epoch: Date.parse(createdAt),
-        failedProviders: [],
-        tickLabel: compactTime.format(new Date(createdAt)),
-      };
-
-      for (const [provider, stats] of providerMap) {
-        point[provider] =
-          stats.count > 0 ? Math.round(stats.total / stats.count) : null;
-        if (stats.failed && stats.count === 0) {
-          point.failedProviders = [...point.failedProviders, provider];
-        }
-      }
-
-      points.push(point);
-    }
-
-    return points.sort(
-      (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
-    );
-  }, [timeseriesRows, selectedRegion]);
-
-  const globalRanking = useMemo(() => {
-    const byProvider = new Map<
-      string,
-      {
-        totalMs: number;
-        count: number;
-        successTotal: number;
-        rateCount: number;
-      }
-    >();
-
-    const filtered =
-      selectedRegion === ALL_REGIONS
-        ? regionalStats
-        : regionalStats.filter((r) => r.region === selectedRegion);
-
-    for (const row of filtered) {
-      const existing = byProvider.get(row.provider);
-      if (existing) {
-        if (row.avgMs !== null) {
-          existing.totalMs += row.avgMs;
-          existing.count += 1;
-        }
-        existing.successTotal += row.successRate;
-        existing.rateCount += 1;
-      } else {
-        byProvider.set(row.provider, {
-          totalMs: row.avgMs ?? 0,
-          count: row.avgMs !== null ? 1 : 0,
-          successTotal: row.successRate,
-          rateCount: 1,
-        });
-      }
-    }
-
-    return Array.from(byProvider.entries())
-      .filter(([, stats]) => stats.count > 0)
-      .map(([provider, stats]) => ({
-        provider,
-        avgMs: Math.round(stats.totalMs / stats.count),
-        successRate: stats.successTotal / stats.rateCount,
-      }))
-      .sort((a, b) => a.avgMs - b.avgMs);
-  }, [regionalStats, selectedRegion]);
+  const aggregateProviderRow = useMemo<RegionLatencyRow | null>(() => {
+    return buildAggregateProviderRow({
+      allRegionSamples,
+      rows: timeseriesRows,
+      selectedProvider,
+      selectedRegion,
+    });
+  }, [
+    allRegionSamples,
+    selectedProvider,
+    selectedRegion,
+    timeseriesRows,
+  ]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {
-    const providerRows = regionalStats
-      .filter((row) => row.provider === selectedProvider)
-      .map((row) => ({
-        averageLatencyMs: row.avgMs,
-        failedCount: row.sampleCount - row.successCount,
-        latestAt: row.latestAt,
-        p95Ms: row.p95Ms,
-        region: row.region,
-        sampleCount: row.sampleCount,
-        successRate: row.successRate,
-      }));
-
-    if (!providerRows.length) {
-      return providerRows;
-    }
-
-    const aggregateRow: RegionLatencyRow = {
-      averageLatencyMs: averageNullable(
-        providerRows.map((row) => row.averageLatencyMs),
-      ),
-      failedCount: providerRows.reduce(
-        (total, row) => total + row.failedCount,
-        0,
-      ),
-      isAggregate: true,
-      latestAt: latestIso(providerRows.map((row) => row.latestAt)),
-      p95Ms: averageNullable(providerRows.map((row) => row.p95Ms)),
-      region: "All",
-      sampleCount: providerRows.reduce(
-        (total, row) => total + row.sampleCount,
-        0,
-      ),
-      successRate: averageNullable(providerRows.map((row) => row.successRate)),
-    };
-
-    return [aggregateRow, ...providerRows];
-  }, [regionalStats, selectedProvider]);
+    return buildRegionLatencyRows({
+      aggregateProviderRow,
+      regionalStats,
+      selectedProvider,
+    });
+  }, [aggregateProviderRow, regionalStats, selectedProvider]);
 
   return (
     <main className="page-shell">
@@ -368,13 +233,13 @@ export default function App() {
         <div className="section-header">
           <div>
             <h2 className="section-title">Latency over time</h2>
-            <p className="section-subtitle">
-              All providers
-              {selectedRegion === ALL_REGIONS
-                ? " averaged across all regions"
-                : ` in ${selectedRegion || "..."}`}{" "}
-              &middot; {timeseriesHours}h window
-            </p>
+              <p className="section-subtitle">
+                All providers
+                {selectedRegion === ALL_REGIONS
+                  ? " averaged across all regions"
+                  : ` in ${selectedRegion}`}{" "}
+                &middot; {timeseriesHours}h window
+              </p>
           </div>
           <span className="chip">
             {timeseriesQuery.isLoading
@@ -469,25 +334,49 @@ export default function App() {
         </div>
       </div>
 
-      {globalRanking.length > 0 && (
+      {rankedProviders.length > 0 && (
         <div className="card">
           <div className="section-header">
             <div>
               <h2 className="section-title">Provider ranking</h2>
               <p className="section-subtitle">
-                Average latency
+                {rankingMetric === "avg" ? "Average latency" : "P95 latency"}
                 {selectedRegion === ALL_REGIONS
                   ? " across all regions"
                   : ` in ${selectedRegion}`}{" "}
                 &middot; {timeseriesHours}h window
               </p>
             </div>
-            {regionalStatsQuery.isFetching && (
-              <span className="chip">Refreshing...</span>
-            )}
+            <div className="section-actions">
+              <div className="metric-toggle" aria-label="Ranking metric">
+                <button
+                  type="button"
+                  aria-pressed={rankingMetric === "avg"}
+                  className={rankingMetric === "avg" ? "is-active" : undefined}
+                  onClick={() => {
+                    startTransition(() => setRankingMetric("avg"));
+                  }}
+                >
+                  Avg
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={rankingMetric === "p95"}
+                  className={rankingMetric === "p95" ? "is-active" : undefined}
+                  onClick={() => {
+                    startTransition(() => setRankingMetric("p95"));
+                  }}
+                >
+                  P95
+                </button>
+              </div>
+              {timeseriesQuery.isFetching && (
+                <span className="chip">Refreshing...</span>
+              )}
+            </div>
           </div>
           <Suspense fallback={null}>
-            <GlobalRanking rows={globalRanking} />
+            <GlobalRanking metric={rankingMetric} rows={rankedProviders} />
           </Suspense>
         </div>
       )}
@@ -499,39 +388,4 @@ function rateClass(rate: number): string {
   if (rate >= 99) return "rate-good";
   if (rate >= 90) return "rate-warn";
   return "rate-bad";
-}
-
-function uniqueValues(values: string[]): string[] {
-  return Array.from(new Set(values)).sort((left, right) =>
-    left.localeCompare(right),
-  );
-}
-
-function averageNullable(values: Array<number | null>): number | null {
-  const numericValues = values.filter(
-    (value): value is number => value !== null,
-  );
-
-  if (!numericValues.length) {
-    return null;
-  }
-
-  return Math.round(
-    numericValues.reduce((total, value) => total + value, 0) /
-      numericValues.length,
-  );
-}
-
-function latestIso(values: Array<string | null>): string | null {
-  return values.reduce<string | null>((latest, value) => {
-    if (!value) {
-      return latest;
-    }
-
-    if (!latest || Date.parse(value) > Date.parse(latest)) {
-      return value;
-    }
-
-    return latest;
-  }, null);
 }
