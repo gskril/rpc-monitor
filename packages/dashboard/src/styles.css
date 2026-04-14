@@ -325,6 +325,57 @@ select:focus {
   color: var(--accent);
 }
 
+.provider-menu {
+  position: relative;
+}
+
+.provider-menu summary {
+  list-style: none;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-size: 0.88rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.provider-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.provider-menu[open] summary {
+  border-color: var(--accent);
+}
+
+.provider-menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 210px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: rgba(8, 14, 23, 0.98);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  z-index: 5;
+}
+
+.provider-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--text);
+  padding: 4px 2px;
+}
+
+.provider-option input {
+  accent-color: var(--accent);
+}
+
 .chart-shell {
   height: 300px;
   padding: 0 8px;

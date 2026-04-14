@@ -45,7 +45,6 @@ const palette = [
 
 export default function LatencyChart(props: {
   chartData: ChartPoint[];
-  highlightedProvider: string;
   providerKeys: string[];
 }) {
   const colors = new Map(
@@ -114,27 +113,20 @@ export default function LatencyChart(props: {
             paddingTop: 8,
           }}
         />
-        {props.providerKeys.map((provider) => {
-          const highlighted = provider === props.highlightedProvider;
-
-          return (
-            <Line
-              key={provider}
-              type="monotone"
-              dataKey={provider}
-              name={provider}
-              stroke={colors.get(provider) ?? "#7dd3fc"}
-              strokeOpacity={
-                highlighted || !props.highlightedProvider ? 1 : 0.2
-              }
-              strokeWidth={highlighted ? 2.5 : 1.5}
-              dot={false}
-              activeDot={{ r: highlighted ? 4 : 3, strokeWidth: 0 }}
-              connectNulls
-              isAnimationActive={false}
-            />
-          );
-        })}
+        {props.providerKeys.map((provider) => (
+          <Line
+            key={provider}
+            type="monotone"
+            dataKey={provider}
+            name={provider}
+            stroke={colors.get(provider) ?? "#7dd3fc"}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0 }}
+            connectNulls
+            isAnimationActive={false}
+          />
+        ))}
       </LineChart>
     </ResponsiveContainer>
   );
