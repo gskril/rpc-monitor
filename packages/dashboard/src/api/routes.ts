@@ -13,10 +13,11 @@ export async function handleApiRequest(
 
   if (url.pathname === "/api/latest") {
     const hours = parseHours(url.searchParams.get("hours"), 1);
-    const rows = await latestStats(hours);
+    const { globalRows, rows } = await latestStats(hours);
 
     return json(
       {
+        globalRows,
         hours,
         rows,
       },
