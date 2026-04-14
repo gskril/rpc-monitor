@@ -94,6 +94,9 @@ export default function LatencyChart(props: {
           tickFormatter={(v: number) => `${v}ms`}
         />
         <Tooltip
+          allowEscapeViewBox={{ x: true, y: true }}
+          position={{ y: 0 }}
+          wrapperStyle={{ pointerEvents: "none", zIndex: 50 }}
           content={({ active, payload }) => (
             <ChartTooltip
               active={active}
