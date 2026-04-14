@@ -29,15 +29,8 @@ export type RankedProvider = {
   successRate: number;
 };
 
-type AllRegionProviderPoint = {
-  avgMs: number;
-  createdAt: string;
-  provider: string;
-};
-
 type AllRegionSamples = {
   chartData: ChartDatum[];
-  providerPoints: AllRegionProviderPoint[];
 };
 
 export function uniqueValues(values: string[]): string[] {
@@ -100,36 +93,37 @@ export function buildChartData(params: {
 }
 
 export function buildRankedProviders(params: {
-  allRegionSamples: AllRegionSamples;
+  globalRows: LatestStat[];
   rows: TimeSeriesPoint[];
   selectedRegion: string;
 }): RankedProvider[] {
+  if (params.selectedRegion === ALL_REGIONS) {
+    return params.globalRows.map((row) => ({
+      avgMs: row.avgMs,
+      p95Ms: row.p95Ms,
+      provider: row.provider,
+      successRate: row.successRate,
+    }));
+  }
+
   const latencyByProvider = new Map<string, { responseTimes: number[] }>();
   const availabilityByProvider = new Map<
     string,
     { sampleCount: number; successCount: number }
   >();
 
-  const latencyRows =
-    params.selectedRegion === ALL_REGIONS
-      ? params.allRegionSamples.providerPoints.map((row) => ({
-          provider: row.provider,
-          responseMs: row.avgMs,
-        }))
-      : params.rows;
-
-  for (const row of latencyRows) {
-    const existing = latencyByProvider.get(row.provider);
-    if (existing) {
-      existing.responseTimes.push(row.responseMs);
-    } else {
-      latencyByProvider.set(row.provider, {
-        responseTimes: [row.responseMs],
-      });
-    }
-  }
-
   for (const row of params.rows) {
+    if (row.success) {
+      const existingLatency = latencyByProvider.get(row.provider);
+      if (existingLatency) {
+        existingLatency.responseTimes.push(row.responseMs);
+      } else {
+        latencyByProvider.set(row.provider, {
+          responseTimes: [row.responseMs],
+        });
+      }
+    }
+
     const existing = availabilityByProvider.get(row.provider);
     if (existing) {
       existing.sampleCount += 1;
@@ -158,8 +152,7 @@ export function buildRankedProviders(params: {
 }
 
 export function buildAggregateProviderRow(params: {
-  allRegionSamples: AllRegionSamples;
-  rows: TimeSeriesPoint[];
+  globalRows: LatestStat[];
   selectedProvider: string;
   selectedRegion: string;
 }): RegionLatencyRow | null {
@@ -167,35 +160,23 @@ export function buildAggregateProviderRow(params: {
     return null;
   }
 
-  const normalizedRows = params.allRegionSamples.providerPoints
-    .filter((row) => row.provider === params.selectedProvider)
-    .map((row) => ({
-      createdAt: row.createdAt,
-      responseMs: row.avgMs,
-    }));
-
-  const availabilityRows = params.rows.filter(
+  const summaryRow = params.globalRows.find(
     (row) => row.provider === params.selectedProvider,
   );
 
-  if (!normalizedRows.length && !availabilityRows.length) {
+  if (!summaryRow) {
     return null;
   }
 
-  const latestAt = latestIso(normalizedRows.map((row) => row.createdAt));
-  const responseTimes = normalizedRows.map((row) => row.responseMs);
-  const successCount = availabilityRows.filter((row) => row.success).length;
-  const sampleCount = availabilityRows.length;
-
   return {
-    averageLatencyMs: averageRounded(responseTimes),
-    failedCount: sampleCount - successCount,
+    averageLatencyMs: summaryRow.avgMs,
+    failedCount: summaryRow.sampleCount - summaryRow.successCount,
     isAggregate: true,
-    latestAt,
-    p95Ms: percentileCont(responseTimes, 0.95),
+    latestAt: summaryRow.latestAt,
+    p95Ms: summaryRow.p95Ms,
     region: "All",
-    sampleCount,
-    successRate: sampleCount > 0 ? (successCount / sampleCount) * 100 : null,
+    sampleCount: summaryRow.sampleCount,
+    successRate: summaryRow.successRate,
   };
 }
 
@@ -268,20 +249,6 @@ function percentileCont(values: number[], percentile: number): number | null {
   return Math.round(interpolatedValue);
 }
 
-function latestIso(values: Array<string | null>): string | null {
-  return values.reduce<string | null>((latest, value) => {
-    if (!value) {
-      return latest;
-    }
-
-    if (!latest || Date.parse(value) > Date.parse(latest)) {
-      return value;
-    }
-
-    return latest;
-  }, null);
-}
-
 function aggregateRowsAcrossRegions(
   rows: TimeSeriesPoint[],
   tickFormatter: Intl.DateTimeFormat,
@@ -322,7 +289,6 @@ function aggregateRowsAcrossRegions(
   }
 
   const chartData: ChartDatum[] = [];
-  const providerPoints: AllRegionProviderPoint[] = [];
 
   for (const [createdAt, providerMap] of grouped) {
     const point: ChartDatum = {
@@ -336,11 +302,6 @@ function aggregateRowsAcrossRegions(
       if (stats.count > 0) {
         const avgMs = Math.round(stats.total / stats.count);
         point[provider] = avgMs;
-        providerPoints.push({
-          avgMs,
-          createdAt,
-          provider,
-        });
       } else {
         point[provider] = null;
       }
@@ -355,6 +316,5 @@ function aggregateRowsAcrossRegions(
 
   return {
     chartData: chartData.sort(compareByCreatedAt),
-    providerPoints,
   };
 }

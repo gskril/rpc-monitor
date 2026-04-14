@@ -52,6 +52,7 @@ export default function App() {
   });
 
   const regionalStats = regionalStatsQuery.data?.rows ?? [];
+  const globalStats = regionalStatsQuery.data?.globalRows ?? [];
 
   // Seed the default provider selection once data arrives.
   useEffect(() => {
@@ -94,7 +95,7 @@ export default function App() {
     [timeseriesRows],
   );
 
-  const { allRegionSamples, chartData } = useMemo(
+  const { chartData } = useMemo(
     () =>
       buildChartData({
         rows: timeseriesRows,
@@ -106,11 +107,11 @@ export default function App() {
 
   const globalRanking = useMemo<RankedProvider[]>(() => {
     return buildRankedProviders({
-      allRegionSamples,
+      globalRows: globalStats,
       rows: timeseriesRows,
       selectedRegion,
     });
-  }, [allRegionSamples, selectedRegion, timeseriesRows]);
+  }, [globalStats, selectedRegion, timeseriesRows]);
 
   const rankedProviders = useMemo(() => {
     return globalRanking
@@ -125,16 +126,14 @@ export default function App() {
 
   const aggregateProviderRow = useMemo<RegionLatencyRow | null>(() => {
     return buildAggregateProviderRow({
-      allRegionSamples,
-      rows: timeseriesRows,
+      globalRows: globalStats,
       selectedProvider,
       selectedRegion,
     });
   }, [
-    allRegionSamples,
+    globalStats,
     selectedProvider,
     selectedRegion,
-    timeseriesRows,
   ]);
 
   const regionLatencyRows = useMemo<RegionLatencyRow[]>(() => {

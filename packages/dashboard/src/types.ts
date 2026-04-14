@@ -20,6 +20,7 @@ export type TimeSeriesPoint = {
 };
 
 export type LatestStatsResponse = {
+  globalRows: LatestStat[];
   hours: number;
   rows: LatestStat[];
 };
