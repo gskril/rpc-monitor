@@ -8,7 +8,10 @@ import type { LatestStat, TimeSeriesPoint } from "../types";
 
 let databasePromise: Promise<ReturnType<typeof createDatabase>> | undefined;
 
-export async function latestStats(hours: number): Promise<LatestStat[]> {
+export async function latestStats(hours: number): Promise<{
+  globalRows: LatestStat[];
+  rows: LatestStat[];
+}> {
   const db = await getDatabase();
 
   const result = await sql<LatestStatsRow>`
@@ -58,10 +61,54 @@ export async function latestStats(hours: number): Promise<LatestStat[]> {
     left join latency
       on latency.region = availability.region
      and latency.provider = availability.provider
-    order by availability.region asc, availability.provider asc
+    union all
+    select
+      '__all__' as region,
+      availability.provider,
+      latency.avg_ms,
+      latency.p50_ms,
+      latency.p95_ms,
+      availability.success_rate,
+      availability.sample_count,
+      availability.success_count,
+      availability.latest_at
+    from (
+      select
+        provider,
+        round(avg(case when success then 1.0 else 0.0 end) * 100, 2) as success_rate,
+        count(*)::int as sample_count,
+        count(*) filter (where success)::int as success_count,
+        max(created_at) as latest_at
+      from windowed
+      group by provider
+    ) availability
+    left join (
+      select
+        provider,
+        round(avg(response_ms))::int as avg_ms,
+        round(percentile_cont(0.50) within group (order by response_ms))::int as p50_ms,
+        round(percentile_cont(0.95) within group (order by response_ms))::int as p95_ms
+      from windowed
+      where success
+      group by provider
+    ) latency
+      on latency.provider = availability.provider
+    order by region asc, provider asc
   `.execute(db);
 
-  return result.rows.map(mapLatestRow);
+  const rows: LatestStat[] = [];
+  const globalRows: LatestStat[] = [];
+
+  for (const row of result.rows) {
+    if (row.region === "__all__") {
+      globalRows.push(mapLatestRow(row, "all"));
+      continue;
+    }
+
+    rows.push(mapLatestRow(row));
+  }
+
+  return { globalRows, rows };
 }
 
 export async function timeSeries(params: {
@@ -156,14 +203,14 @@ function getDatabase() {
   return databasePromise;
 }
 
-function mapLatestRow(row: LatestStatsRow): LatestStat {
+function mapLatestRow(row: LatestStatsRow, regionOverride?: string): LatestStat {
   return {
     avgMs: row.avg_ms,
     latestAt: row.latest_at.toISOString(),
     p50Ms: row.p50_ms,
     p95Ms: row.p95_ms,
     provider: row.provider,
-    region: row.region,
+    region: regionOverride ?? row.region,
     sampleCount: row.sample_count,
     successCount: row.success_count,
     successRate: Number(row.success_rate),
