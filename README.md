@@ -22,23 +22,28 @@ Database changes are managed through Kysely migrations. Both the worker and dash
 
 ## Provider support
 
-The worker uses [`evm-providers`](https://www.npmjs.com/package/evm-providers) for endpoint generation and includes:
+The worker uses [`evm-providers`](https://www.npmjs.com/package/evm-providers) where possible, with a few direct URLs for providers that are not covered by the package. It currently includes:
 
 - `alchemy`
-- `quicknode`
-- `infura`
-- `chainstack`
 - `ankr`
-- `publicnode`
+- `chainstack`
 - `drpc`
+- `goldsky`
+- `google-asia-east`
+- `google-us-central`
+- `infura`
+- `pocket`
+- `publicnode`
+- `quicknode`
+- `tenderly`
 
 Notes:
 
-- `alchemy`, `infura`, and `chainstack` use API-key style env vars.
+- `alchemy`, `ankr`, `chainstack`, `goldsky`, `infura`, and `tenderly` are included only when their API-key env vars are set.
+- Google is included only when both `GOOGLE_API_KEY` and `GOOGLE_PROJECT` are set. That adds separate `google-asia-east` and `google-us-central` endpoints.
 - `quicknode` supports either `QUICKNODE_URL` or `QUICKNODE_APP_NAME` + `QUICKNODE_API_KEY`.
 - `drpc` works as a public endpoint by default and can use `DRPC_API_KEY` if provided.
-- `ankr` supports `ANKR_API_KEY` and falls back to its public endpoint when unset.
-- `publicnode` is included by default as a public endpoint.
+- `pocket` and `publicnode` are included by default as public endpoints.
 
 ## Local setup
 

@@ -58,12 +58,12 @@ export function loadProviders(env: NodeJS.ProcessEnv): ProviderConfig[] {
   const googleProject = readEnv(env, "GOOGLE_PROJECT");
   if (googleKey && googleProject) {
     providers.push({
-      name: "google-us-central",
-      url: `https://blockchain.googleapis.com/v1/projects/${googleProject}/locations/us-central1/endpoints/ethereum-mainnet/rpc?key=${googleKey}`,
-    });
-    providers.push({
       name: "google-asia-east",
       url: `https://blockchain.googleapis.com/v1/projects/${googleProject}/locations/asia-east1/endpoints/ethereum-mainnet/rpc?key=${googleKey}`,
+    });
+    providers.push({
+      name: "google-us-central",
+      url: `https://blockchain.googleapis.com/v1/projects/${googleProject}/locations/us-central1/endpoints/ethereum-mainnet/rpc?key=${googleKey}`,
     });
   }
 
