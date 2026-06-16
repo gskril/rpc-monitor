@@ -29,8 +29,6 @@ The worker uses [`evm-providers`](https://www.npmjs.com/package/evm-providers) w
 - `chainstack`
 - `drpc`
 - `goldsky`
-- `google-asia-east`
-- `google-us-central`
 - `infura`
 - `pocket`
 - `publicnode`
@@ -40,7 +38,6 @@ The worker uses [`evm-providers`](https://www.npmjs.com/package/evm-providers) w
 Notes:
 
 - `alchemy`, `ankr`, `chainstack`, `goldsky`, `infura`, and `tenderly` are included only when their API-key env vars are set.
-- Google is included only when both `GOOGLE_API_KEY` and `GOOGLE_PROJECT` are set. That adds separate `google-asia-east` and `google-us-central` endpoints.
 - `quicknode` supports either `QUICKNODE_URL` or `QUICKNODE_APP_NAME` + `QUICKNODE_API_KEY`.
 - `drpc` works as a public endpoint by default and can use `DRPC_API_KEY` if provided.
 - `pocket` and `publicnode` are included by default as public endpoints.
@@ -185,8 +182,6 @@ Optional worker settings:
 - `CHAINSTACK_API_KEY`
 - `DRPC_API_KEY`
 - `GOLDSKY_API_KEY`
-- `GOOGLE_API_KEY`
-- `GOOGLE_PROJECT`
 - `INFURA_API_KEY`
 - `QUICKNODE_API_KEY`
 - `QUICKNODE_APP_NAME`
