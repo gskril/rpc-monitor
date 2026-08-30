@@ -8,11 +8,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "overrides": {
-    "postcss": "^8.5.26",
-    "nanoid": "^3.3.18",
-    "esbuild": "^0.28.2"
-  },
   "scripts": {
     "build:worker": "cd packages/worker && bun run build",
     "build:dashboard": "cd packages/dashboard && bun run build",
